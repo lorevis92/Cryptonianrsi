@@ -64,15 +64,27 @@ export async function tradingPairs() {
     .map(p => ({ symbol: p.symbol, base: p.base || p.baseCoin || p.symbol.replace(/USDT$/, '') }))
 }
 
-// I titoli più scambiati nelle ultime 24 ore (volume in USDT). Una sola richiesta, tenuta 10 minuti.
-let top = { at: 0, list: [] }
+// Volume delle ultime 24 ore (in USDT) per ogni coppia, dai ticker. Una richiesta, tenuta 1 minuto per istanza.
+let vols = { at: 0, map: new Map(), job: null }
+export async function volumes() {
+  if (Date.now() - vols.at < 60e3 && vols.map.size) return vols.map
+  if (!vols.job) {
+    vols.job = getJson('/api/v1/futures/market/tickers').then(data => {
+      const map = new Map()
+      for (const t of Array.isArray(data) ? data : []) {
+        const v = Number(t.quoteVol)
+        if (t.symbol && Number.isFinite(v)) map.set(t.symbol, v)
+      }
+      vols = { at: Date.now(), map, job: null }
+      return map
+    }).catch(e => { vols.job = null; throw e })
+  }
+  return vols.job
+}
+
+// I titoli più scambiati nelle ultime 24 ore (volume in USDT).
 export async function topSymbols(n = 50) {
-  if (Date.now() - top.at < 10 * 60e3 && top.list.length) return top.list.slice(0, n)
-  const data = await getJson('/api/v1/futures/market/tickers')
-  const list = (Array.isArray(data) ? data : [])
-    .filter(t => /^[A-Z0-9]+USDT$/.test(t.symbol) && Number(t.quoteVol) > 0)
-    .sort((a, b) => Number(b.quoteVol) - Number(a.quoteVol))
-    .map(t => t.symbol)
-  top = { at: Date.now(), list }
-  return list.slice(0, n)
+  const map = await volumes()
+  return [...map].filter(([s, v]) => /^[A-Z0-9]+USDT$/.test(s) && v > 0)
+    .sort((a, b) => b[1] - a[1]).slice(0, n).map(([s]) => s)
 }

@@ -328,6 +328,11 @@ p { margin: 0; }
 .picker__row .star { margin-right: -8px; }
 .picker__item.is-on { color: var(--gold-light); }
 .picker__quote { color: var(--muted); font-weight: 400; }
+/* Volume 24h: piccolo e discreto, allineato a destra */
+.picker__vol { margin-left: auto; padding-left: 10px; align-self: center; white-space: nowrap; font-family: var(--serif); font-size: 13px; font-weight: 400; color: var(--muted); font-variant-numeric: lining-nums tabular-nums; }
+.picker__item.is-on .picker__vol { color: var(--gold); }
+.picker__section { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.picker__section span { font-size: 11px; color: var(--muted-2); white-space: nowrap; }
 
 .plans { display: grid; gap: 12px; }
 .plan { text-align: left; padding: 16px; border: 1px solid var(--hair); border-radius: 14px; background: var(--graphite-2); transition: border-color .3s; }

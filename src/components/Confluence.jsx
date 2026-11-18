@@ -1,10 +1,11 @@
 import Icon from './Icon.jsx'
+import Bubble from './Bubble.jsx'
 import { TIMEFRAMES, planFor } from '../lib/plans.js'
-import { fmtK } from '../lib/format.js'
+import { fmtK, ZONE_LABEL } from '../lib/format.js'
 
 // Il cuore dell'app: tutti i timeframe sulla stessa scala 0–100.
 // Quando i pallini si mettono in colonna nella stessa zona, c'è confluenza.
-export default function Confluence({ states, unlocked, params, onLocked }) {
+export default function Confluence({ states, unlocked, params, onLocked, bubble, onBubble }) {
   const active = TIMEFRAMES.filter(tf => unlocked.includes(tf))
   const ready = active.filter(tf => states[tf]?.K != null)
   const os = ready.filter(tf => states[tf].zone === 'oversold').length
@@ -31,6 +32,12 @@ export default function Confluence({ states, unlocked, params, onLocked }) {
           <p className="confluence__headline">{headline}</p>
           <p className="confluence__sub">{sub}</p>
         </div>
+        {bubble && (
+          <div className="confluence__bubble">
+            <Bubble data={bubble} size={66} onClick={onBubble}
+              label={`Bolla di ${bubble.label}: ${bubble.side === 'neutral' ? 'nessuna zona estrema' : ZONE_LABEL[bubble.side].toLowerCase()}, allineamento ${Math.round(bubble.score * 100)} su 100. Torna alla mappa`} />
+          </div>
+        )}
       </div>
 
       <div className="ladder" style={{ '--lo': params.lower + '%', '--hi': params.upper + '%' }}>

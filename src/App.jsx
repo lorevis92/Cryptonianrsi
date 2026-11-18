@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './components/Icon.jsx'
 import Sheet from './components/Sheet.jsx'
 import Confluence from './components/Confluence.jsx'
@@ -10,6 +10,9 @@ import AlertsPanel from './components/AlertsPanel.jsx'
 import CardBoundary from './components/CardBoundary.jsx'
 import BubbleMap from './components/BubbleMap.jsx'
 import { useFavorites } from './lib/favorites.js'
+import { useSymbolTails } from './lib/useScan.js'
+import { alignment } from './lib/alignment.js'
+import { bubbleData } from './lib/bubbleDraw.js'
 import { TIMEFRAMES, planById } from './lib/plans.js'
 import { DEFAULTS } from './lib/stochrsi.js'
 import { load, save } from './lib/storage.js'
@@ -28,6 +31,7 @@ export default function App() {
   // La mappa a bolle è la pagina iniziale; il dettaglio di un titolo ci sta sopra nella cronologia,
   // così anche il tasto Indietro del telefono riporta alla mappa.
   const [view, setView] = useState('map')
+  const [highlight, setHighlight] = useState(null) // titolo evidenziato nella mappa al ritorno dal dettaglio
 
   useEffect(() => {
     if (history.state?.crsi) history.replaceState(null, '')
@@ -38,6 +42,7 @@ export default function App() {
 
   const openSymbol = useCallback(sym => {
     setSymbol(sym)
+    setHighlight(null)
     setView(v => {
       if (v !== 'detail') history.pushState({ crsi: 'detail' }, '')
       return 'detail'
@@ -64,6 +69,20 @@ export default function App() {
   const isFav = favorites.includes(symbol)
   const onState = useCallback((tf, s) => setStates(prev => (prev[tf] === s ? prev : { ...prev, [tf]: s })), [])
   const openPlans = useCallback(() => setSheet('plan'), [])
+
+  // Bolla del titolo nel dettaglio: i timeframe sbloccati arrivano in tempo reale dalle card,
+  // quelli bloccati dalla stessa scansione della mappa (che è visibile su tutti i piani).
+  const lockedTfs = TIMEFRAMES.filter(tf => !unlocked.includes(tf))
+  const lockedTails = useSymbolTails(symbol, view === 'detail' ? lockedTfs : [], params)
+  const bubble = useMemo(() => {
+    const tails = {}
+    for (const tf of TIMEFRAMES) {
+      if (unlocked.includes(tf)) { if (states[tf]?.k) tails[tf] = { k: states[tf].k, d: states[tf].d } }
+      else if (lockedTails[tf]) tails[tf] = lockedTails[tf]
+    }
+    return bubbleData(symbol, alignment(tails, params))
+  }, [symbol, states, lockedTails, unlocked, params])
+  const bubbleToMap = useCallback(() => { setHighlight(symbol); backToMap() }, [symbol, backToMap])
 
   const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', alerts: 'Avvisi' }
 
@@ -111,11 +130,11 @@ export default function App() {
       </div>
 
       {view === 'map' ? (
-        <BubbleMap favorites={favorites} params={params} onOpen={openSymbol} />
+        <BubbleMap favorites={favorites} params={params} onOpen={openSymbol} highlight={highlight} onClearHighlight={() => setHighlight(null)} />
       ) : (
         <main className="layout">
           <aside className="layout__side">
-            <Confluence states={states} unlocked={unlocked} params={params} onLocked={openPlans} />
+            <Confluence states={states} unlocked={unlocked} params={params} onLocked={openPlans} bubble={bubble} onBubble={bubbleToMap} />
           </aside>
           <div className="layout__cards">
             {TIMEFRAMES.map(tf => (

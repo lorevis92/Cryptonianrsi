@@ -98,7 +98,13 @@ p { margin: 0; }
 }
 
 /* ---------- Confluenza ---------- */
-.confluence__head { display: flex; align-items: flex-end; gap: 16px; }
+.confluence__head { position: relative; z-index: 0; display: flex; align-items: flex-end; gap: 16px; }
+.confluence__text { flex: 1; min-width: 0; }
+/* Bolla del titolo, la stessa della mappa: toccandola si torna alla mappa */
+.confluence__bubble { flex: none; align-self: center; margin-left: auto; }
+.bubble { position: relative; display: block; border-radius: 50%; -webkit-tap-highlight-color: transparent; }
+.bubble__canvas { position: absolute; z-index: -1; pointer-events: none; } /* l'alone resta dietro al testo */
+.bubble:focus-visible { outline-offset: 4px; border-radius: 50%; }
 .confluence__count { font-family: var(--serif); font-size: 76px; line-height: .82; color: var(--gold-light); font-variant-numeric: lining-nums; min-width: .6em; }
 .confluence__count.is-oversold { color: var(--long); }
 .confluence__count.is-overbought { color: var(--short); }
@@ -262,6 +268,7 @@ p { margin: 0; }
 .rank { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 6px 20px calc(24px + env(safe-area-inset-bottom)); }
 .rank__row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 6px; border-bottom: 1px solid var(--hair); text-align: left; border-radius: 10px; transition: background-color .2s; }
 .rank__row:hover { background: var(--graphite); }
+.rank__row.is-highlight { background: var(--graphite); box-shadow: inset 0 0 0 1px rgba(237, 234, 226, .45); }
 .rank__pos { width: 22px; font-family: var(--serif); font-size: 14px; color: var(--muted-2); text-align: right; font-variant-numeric: tabular-nums; }
 .rank__name { flex: 1; min-width: 0; display: grid; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
 .rank__row .mini-rings, .rank__score { flex: none; }

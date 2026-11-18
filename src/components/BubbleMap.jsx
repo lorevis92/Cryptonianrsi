@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import BubbleCanvas from './BubbleCanvas.jsx'
 import MiniRings from './MiniRings.jsx'
 import Icon from './Icon.jsx'
 import { useScan } from '../lib/useScan.js'
-import { alignment, ringValue, SIGNAL_TIMEFRAMES } from '../lib/alignment.js'
+import { alignment, SIGNAL_TIMEFRAMES } from '../lib/alignment.js'
+import { bubbleData } from '../lib/bubbleDraw.js'
 import { TIMEFRAMES } from '../lib/plans.js'
 import { ZONE_LABEL } from '../lib/format.js'
 import { load, save } from '../lib/storage.js'
@@ -13,7 +14,7 @@ const VIEWS = [['bubbles', 'Bolle'], ['list', 'Elenco']]
 const listJoin = a => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} o ${a[a.length - 1]}`)
 
 // Pagina iniziale: l'allineamento dello Stochastic RSI sui 7 timeframe, a colpo d'occhio.
-export default function BubbleMap({ favorites, params, onOpen }) {
+export default function BubbleMap({ favorites, params, onOpen, highlight = null, onClearHighlight }) {
   const [view, setView] = useState(() => load('mapView', 'bubbles'))
   const [filter, setFilter] = useState(() => load('mapFilter', 'all'))
   const [legend, setLegend] = useState(false)
@@ -22,17 +23,22 @@ export default function BubbleMap({ favorites, params, onOpen }) {
 
   const { tails, symbols, loaded, error } = useScan(favorites, params)
 
-  const rows = useMemo(() => symbols.map((s, rank) => {
-    const a = alignment(tails[s], params)
-    return {
-      id: s, rank, label: s.replace(/USDT$/, ''), ...a,
-      rings: Object.fromEntries(TIMEFRAMES.map(tf => [tf, ringValue(a.states[tf])])),
-    }
-  }), [tails, symbols, params])
+  const rows = useMemo(() => symbols.map((s, rank) => ({ ...bubbleData(s, alignment(tails[s], params)), rank })), [tails, symbols, params])
 
   const match = r => filter === 'all' || (r.side === filter && r.score > 0)
   const items = useMemo(() => rows.map(r => ({ ...r, visible: match(r), signal: !!r.signal })), [rows, filter]) // eslint-disable-line react-hooks/exhaustive-deps
   const ranked = useMemo(() => rows.filter(match).sort((a, b) => b.score - a.score || a.rank - b.rank), [rows, filter]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Titolo evidenziato tornando dal dettaglio: se il filtro lo nasconde, torno a "Tutti";
+  // nell'elenco la sua riga viene portata in vista.
+  const hlRow = useRef()
+  const hl = rows.find(r => r.id === highlight)
+  useEffect(() => {
+    if (hl && filter !== 'all' && !match(hl)) setFilter('all')
+  }, [highlight, hl?.side, hl?.score]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (view === 'list') hlRow.current?.scrollIntoView({ block: 'center' })
+  }, [view, highlight, !!hl]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const status = error && !loaded ? 'Bitunix non risponde, riprovo tra poco.'
     : loaded < TIMEFRAMES.length ? `Sto leggendo i timeframe: ${loaded} di ${TIMEFRAMES.length}` : null
@@ -76,15 +82,15 @@ export default function BubbleMap({ favorites, params, onOpen }) {
 
       {view === 'bubbles' ? (
         <div className="map__stage">
-          <BubbleCanvas items={items} onPick={onOpen} label={`Mappa a bolle di ${items.filter(i => i.visible).length} titoli. Per leggerli uno per uno usa la vista Elenco.`} />
+          <BubbleCanvas items={items} highlight={highlight} onPick={onOpen} onBlank={onClearHighlight} label={`Mappa a bolle di ${items.filter(i => i.visible).length} titoli. Per leggerli uno per uno usa la vista Elenco.`} />
           {!rows.length && <p className="map__empty">Sto leggendo il mercato…</p>}
           {rows.length > 0 && loaded > 0 && !ranked.length && <p className="map__empty">Nessun titolo in {filter === 'oversold' ? 'ipervenduto' : 'ipercomprato'} adesso.</p>}
         </div>
       ) : (
         <ol className="rank">
           {ranked.map((r, i) => (
-            <li key={r.id}>
-              <button className={`rank__row is-${r.side}`} onClick={() => onOpen(r.id)}>
+            <li key={r.id} ref={r.id === highlight ? hlRow : undefined}>
+              <button className={`rank__row is-${r.side}` + (r.id === highlight ? ' is-highlight' : '')} onClick={() => onOpen(r.id)} aria-current={r.id === highlight ? 'true' : undefined}>
                 <span className="rank__pos">{i + 1}</span>
                 <MiniRings rings={r.rings} signal={!!r.signal} />
                 <span className="rank__name">

@@ -1,17 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
-import { RING_SIZE } from '../lib/alignment.js'
+import { drawBubble, easeNode, newNode, setTargets, snapNode } from '../lib/bubbleDraw.js'
 
 // Mappa a bolle su canvas: fisica leggera (d3-force), valori che cambiano lentamente.
+// Il disegno della singola bolla è in lib/bubbleDraw.js, lo stesso della bolla nel dettaglio.
 // items: [{ id, label, score 0–1, side, rings: { tf: -1…1 }, signal, visible }]
 
-const OUTER_TO_INNER = ['1d', '4h', '1h', '15m', '5m', '3m', '1m']
-const RING_TOTAL = OUTER_TO_INNER.reduce((a, tf) => a + RING_SIZE[tf], 0)
-const CYAN = '25,230,208', PINK = '255,79,123'
 const FILL = 0.48          // quota dello schermo occupata dalle bolle
 const EASE_R = 0.028       // velocità con cui cambia la grandezza (per fotogramma)
-const EASE_C = 0.03        // velocità con cui cambiano i colori
-const PULSE_MS = 1700
 
 // Restano in memoria tra un'apertura e l'altra: l'entrata animata avviene una sola volta.
 const nodes = new Map()
@@ -19,10 +15,11 @@ let entered = false
 
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
-export default function BubbleCanvas({ items, onPick, label }) {
+export default function BubbleCanvas({ items, highlight = null, onPick, onBlank, label }) {
   const wrap = useRef(), cvs = useRef()
-  const env = useRef({ w: 0, h: 0, dpr: 1, items: [], onPick })
+  const env = useRef({ w: 0, h: 0, dpr: 1, items: [], highlight: null })
   env.current.onPick = onPick
+  env.current.onBlank = onBlank
 
   useEffect(() => {
     const e = env.current
@@ -64,123 +61,44 @@ export default function BubbleCanvas({ items, onPick, label }) {
         let n = nodes.get(it.id)
         if (!n) {
           const a = Math.random() * Math.PI * 2, d = Math.random() * Math.min(w, h) * (entered ? 0.45 : 0.18)
-          n = { id: it.id, x: w / 2 + Math.cos(a) * d, y: h / 2 + Math.sin(a) * d, vx: 0, vy: 0, r: 0, ph: Math.random() * 6.3, rc: {}, g: 0, sigA: 0, pulseAt: 0 }
+          n = newNode({ id: it.id, x: w / 2 + Math.cos(a) * d, y: h / 2 + Math.sin(a) * d, vx: 0, vy: 0, ph: Math.random() * 6.3 })
           nodes.set(it.id, n)
         }
-        n.label = it.label
+        setTargets(n, { ...it, score: it.visible ? it.score : 0, highlight: it.visible && it.id === e.highlight }, { now, reduced })
         n.tr = rel(it) * k
-        n.rt = it.rings
-        n.tg = it.visible ? it.score : 0
-        if (it.side !== 'neutral') n.gs = it.side
-        if (it.signal && !n.sig && !reduced) n.pulseAt = now
-        n.sig = !!it.signal
         n.visible = it.visible
       }
-      for (const [id, n] of nodes) if (!seen.has(id)) { n.tr = 0; n.tg = 0; n.sig = false; n.visible = false }
+      for (const [id, n] of nodes) if (!seen.has(id)) { n.tr = 0; n.tg = 0; n.sig = false; n.hl = false; n.visible = false }
       if (list.length) entered = true
       sim.nodes([...nodes.values()])
       const sx = 0.05 * Math.min(1.8, Math.max(0.6, h / w)), sy = 0.05 * Math.min(1.8, Math.max(0.6, w / h))
       sim.force('x').x(w / 2).strength(sx)
       sim.force('y').y(h / 2).strength(sy)
-      if (reduced) { settle(); sim.alpha(1); sim.tick(220); draw(now) } else sim.alpha(Math.max(sim.alpha(), 0.35))
-    }
-
-    // Movimento ridotto: tutto arriva subito al valore, niente deriva.
-    function settle() {
-      for (const n of nodes.values()) {
-        n.r = n.tr; n.g = n.tg; n.sigA = n.sig ? 1 : 0
-        for (const tf of OUTER_TO_INNER) n.rc[tf] = n.rt?.[tf] || 0
-      }
-      collide.radius(n => n.r + 1.5)
+      if (reduced) {
+        for (const n of nodes.values()) { n.r = n.tr; snapNode(n) }
+        collide.radius(n => n.r + 1.5)
+        sim.alpha(1); sim.tick(220); draw(now)
+      } else sim.alpha(Math.max(sim.alpha(), 0.35))
     }
 
     function ease(dt) {
-      const fr = 1 - Math.pow(1 - EASE_R, dt), fc = 1 - Math.pow(1 - EASE_C, dt)
+      const fr = 1 - Math.pow(1 - EASE_R, dt)
       for (const [id, n] of nodes) {
         n.r += (n.tr - n.r) * fr
-        n.g += (n.tg - n.g) * fc
-        n.sigA += ((n.sig ? 1 : 0) - n.sigA) * fc
-        for (const tf of OUTER_TO_INNER) {
-          const cur = n.rc[tf] || 0
-          n.rc[tf] = cur + ((n.rt?.[tf] || 0) - cur) * fc
-        }
+        easeNode(n, dt)
         if (n.tr === 0 && n.r < 0.3) nodes.delete(id)
       }
       collide.radius(n => n.r + 1.5)
       if (sim.nodes().length !== nodes.size) sim.nodes([...nodes.values()])
     }
 
-    function circle(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2) }
-
     function draw(now) {
       const { w, h, dpr } = e
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, w, h)
-      const list = [...nodes.values()].filter(n => n.r > 0.5).sort((a, b) => a.r - b.r)
-      for (const n of list) {
-        const { x, y, r } = n
-        // Alone proporzionale all'allineamento
-        if (n.g > 0.03 && n.gs) {
-          const col = n.gs === 'oversold' ? CYAN : PINK
-          const grad = ctx.createRadialGradient(x, y, r * 0.85, x, y, r * 1.5)
-          grad.addColorStop(0, `rgba(${col},${0.3 * n.g})`)
-          grad.addColorStop(1, `rgba(${col},0)`)
-          ctx.fillStyle = grad
-          circle(x, y, r * 1.5); ctx.fill()
-        }
-        ctx.fillStyle = '#0E1016'
-        circle(x, y, r); ctx.fill()
-
-        // Anelli: 1d fuori, 1m al centro
-        let outer = r
-        for (const tf of OUTER_TO_INNER) {
-          const inner = Math.max(0, outer - (r * RING_SIZE[tf]) / RING_TOTAL)
-          const v = n.rc[tf] || 0
-          if (Math.abs(v) > 0.01) {
-            ctx.fillStyle = `rgba(${v > 0 ? CYAN : PINK},${Math.min(1, Math.abs(v)) * 0.92})`
-            ctx.beginPath()
-            ctx.arc(x, y, outer, 0, Math.PI * 2)
-            if (inner > 0) { ctx.moveTo(x + inner, y); ctx.arc(x, y, inner, 0, Math.PI * 2, true) }
-            ctx.fill()
-          }
-          if (r > 9) {
-            ctx.strokeStyle = 'rgba(200,169,106,0.17)'
-            ctx.lineWidth = 0.75
-            circle(x, y, Math.max(0.5, outer - 0.4)); ctx.stroke()
-          }
-          outer = inner
-        }
-
-        // Segnale d'entrata: anello dorato sottile, con un solo impulso quando compare
-        if (n.sigA > 0.02) {
-          ctx.strokeStyle = `rgba(235,211,154,${0.85 * n.sigA})`
-          ctx.lineWidth = 1.2
-          circle(x, y, r + 3.5); ctx.stroke()
-        }
-        if (n.pulseAt) {
-          const p = (now - n.pulseAt) / PULSE_MS
-          if (p >= 1) n.pulseAt = 0
-          else if (p > 0) {
-            const q = 1 - Math.pow(1 - p, 3)
-            ctx.strokeStyle = `rgba(235,211,154,${0.7 * (1 - p)})`
-            ctx.lineWidth = 1.6
-            circle(x, y, r + 3.5 + q * 16); ctx.stroke()
-          }
-        }
-
-        // Nome al centro
-        if (r >= 12) {
-          let fs = Math.max(9, Math.min(22, r * 0.34))
-          ctx.font = `500 ${fs}px "Instrument Sans", system-ui, sans-serif`
-          const tw = ctx.measureText(n.label).width
-          if (tw > r * 1.7) { fs = Math.max(8, fs * (r * 1.7) / tw); ctx.font = `500 ${fs}px "Instrument Sans", system-ui, sans-serif` }
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-          ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(6,7,11,0.82)'
-          ctx.strokeText(n.label, x, y + 0.5)
-          ctx.fillStyle = hover === n.id ? '#EBD39A' : '#EDEAE2'
-          ctx.fillText(n.label, x, y + 0.5)
-        }
-      }
+      // Le più grandi sopra; il titolo evidenziato sopra a tutte
+      const list = [...nodes.values()].filter(n => n.r > 0.5).sort((a, b) => (a.hlA - b.hlA) || (a.r - b.r))
+      for (const n of list) drawBubble(ctx, n, now, { hover: hover === n.id })
     }
 
     function frame(now) {
@@ -208,7 +126,7 @@ export default function BubbleCanvas({ items, onPick, label }) {
       return [...nodes.values()].filter(n => n.visible && n.r > 4).sort((a, b) => b.r - a.r)
         .find(n => (n.x - px) ** 2 + (n.y - py) ** 2 <= n.r * n.r)
     }
-    const onClick = ev => { const n = at(ev); if (n) e.onPick(n.id) }
+    const onClick = ev => { const n = at(ev); if (n) e.onPick(n.id); else e.onBlank?.() }
     const onMove = ev => {
       const n = ev.pointerType === 'mouse' ? at(ev) : null
       hover = n?.id || null
@@ -235,8 +153,9 @@ export default function BubbleCanvas({ items, onPick, label }) {
 
   useEffect(() => {
     env.current.items = items
+    env.current.highlight = highlight
     env.current.retarget?.()
-  }, [items])
+  }, [items, highlight])
 
   return (
     <div ref={wrap} className="bubbles" role="img" aria-label={label}>

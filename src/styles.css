@@ -155,6 +155,24 @@ p { margin: 0; }
   background: var(--graphite); box-shadow: 0 10px 30px rgba(0, 0, 0, .55), 0 0 0 1px rgba(235, 211, 154, .12);
 }
 .chart.is-active .chart__host { touch-action: none; }
+.chart--fill { height: 100%; margin: 0; padding: 0; }
+.chart--fill .chart__host { height: 100%; touch-action: none; }
+
+/* Ingrandimento da computer: la card si allarga a tutta la riga con View Transitions */
+::view-transition-group(*) { animation-duration: .45s; animation-timing-function: cubic-bezier(.5, 0, .2, 1); }
+
+/* Grafico a tutto schermo sul telefono: sale dal basso */
+.full {
+  position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
+  padding: calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));
+  background: var(--ink); animation: rise .38s var(--ease) both;
+}
+.full.is-closing { animation: sink .3s var(--ease) both; }
+@keyframes sink { to { transform: translateY(100%); } }
+.full__head { display: flex; align-items: center; gap: 10px; }
+.full.is-oversold .card__zone { color: var(--long); }
+.full.is-overbought .card__zone { color: var(--short); }
+.full__body { flex: 1; min-height: 0; }
 
 .card.is-locked { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
 .card.is-locked .card__head { flex: none; }
@@ -173,6 +191,60 @@ p { margin: 0; }
   .card__lock { position: absolute; inset: 48px 14px 14px; flex-direction: column; justify-content: center; text-align: center; }
   .card__lock p { flex: none; color: var(--ivory); font-size: 14px; }
 }
+
+/* ---------- Mappa a bolle (pagina iniziale) ---------- */
+.app.is-map { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.map { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; max-width: 1480px; margin: 0 auto; }
+.map__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 20px 6px; }
+.map__legend-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 4px 0 10px; font-size: 13px; color: var(--gold); border-radius: var(--r-ctl); }
+.map__legend-btn svg { transition: transform .25s var(--ease); }
+.map__legend-btn.is-on svg { transform: rotate(180deg); }
+.seg { display: inline-flex; padding: 3px; border: 1px solid var(--hair); border-radius: 999px; background: var(--graphite); }
+.seg__btn { height: 28px; padding: 0 13px; border-radius: 999px; font-size: 13px; color: var(--muted); transition: color .2s, background-color .2s; }
+.seg__btn:hover { color: var(--ivory); }
+.seg__btn.is-on { background: rgba(200, 169, 106, .12); color: var(--gold-light); }
+.seg__btn.is-oversold.is-on { background: rgba(25, 230, 208, .1); color: var(--long); }
+.seg__btn.is-overbought.is-on { background: rgba(255, 79, 123, .1); color: var(--short); }
+.seg--filter { order: 3; }
+@media (max-width: 979px) { .seg--filter { width: 100%; } .seg--filter .seg__btn { flex: 1; } }
+@media (min-width: 980px) { .seg--filter { order: 0; } .map__bar { padding-top: 20px; } }
+
+.legend {
+  position: absolute; z-index: 5; top: 100px; left: 20px; right: 20px; max-width: 460px;
+  display: flex; gap: 16px; align-items: flex-start; padding: 16px;
+  background: rgba(14, 16, 22, .96); border: 1px solid var(--gold-line); border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .5); animation: fade .25s both;
+}
+@media (min-width: 980px) { .legend { top: 66px; left: auto; } }
+.legend .mini-rings { flex: none; }
+.legend__text { display: grid; gap: 8px; font-size: 13px; color: var(--muted); }
+.legend__text b { font-weight: 500; color: var(--ivory); }
+.legend__keys { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ivory); }
+.key { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; border-radius: 50%; }
+.key--os { background: var(--long); }
+.key--ob { background: var(--short); }
+.key--n { border: 1px solid rgba(200, 169, 106, .4); }
+.key--sig { border: 1.5px solid var(--gold-light); }
+
+.map__status { padding: 0 20px; font-size: 12px; color: var(--muted); }
+.map__stage { position: relative; flex: 1; min-height: 0; margin: 4px 8px calc(8px + env(safe-area-inset-bottom)); }
+.bubbles { position: absolute; inset: 0; }
+.bubbles__canvas { display: block; width: 100%; height: 100%; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.map__empty { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--gold); }
+
+.rank { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 6px 20px calc(24px + env(safe-area-inset-bottom)); }
+.rank__row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 6px; border-bottom: 1px solid var(--hair); text-align: left; border-radius: 10px; transition: background-color .2s; }
+.rank__row:hover { background: var(--graphite); }
+.rank__pos { width: 22px; font-family: var(--serif); font-size: 14px; color: var(--muted-2); text-align: right; font-variant-numeric: tabular-nums; }
+.rank__name { flex: 1; min-width: 0; display: grid; font-size: 15px; font-weight: 500; }
+.rank__name small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.rank__row.is-oversold small { color: var(--long); }
+.rank__row.is-overbought small { color: var(--short); }
+.rank__sig { margin-left: 8px; font-style: normal; color: var(--gold-light); }
+.rank__score { font-family: var(--serif); font-size: 24px; color: var(--gold-light); font-variant-numeric: lining-nums tabular-nums; min-width: 2ch; text-align: right; }
+.rank__row.is-oversold .rank__score { color: var(--long); }
+.rank__row.is-overbought .rank__score { color: var(--short); }
+.rank__empty { padding: 24px 0; }
 
 /* ---------- Pulsanti e campi ---------- */
 .btn { height: 40px; padding: 0 16px; border-radius: var(--r-ctl); font-size: 14px; font-weight: 500; }

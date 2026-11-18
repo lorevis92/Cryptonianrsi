@@ -52,9 +52,15 @@ export function stochRsi(bars, p = DEFAULTS) {
 export function readState(bars, p = DEFAULTS) {
   if (!bars?.length) return null
   const { k, d } = stochRsi(bars, p)
+  return { k, d, ...readTail(k, d, p) }
+}
+
+// Stato letto dalle ultime righe di K e D (bastano 4 valori).
+// La usa anche la mappa a bolle, che dal server riceve solo la coda delle serie.
+export function readTail(k, d, p = DEFAULTS) {
   const i = k.length - 1
   const K = k[i], D = d[i]
-  if (K == null || D == null) return { k, d, K: null, D: null, zone: 'neutral', intensity: 0, cross: null }
+  if (K == null || D == null) return { K: null, D: null, zone: 'neutral', intensity: 0, cross: null }
   const zone = K <= p.lower ? 'oversold' : K >= p.upper ? 'overbought' : 'neutral'
   const intensity = zone === 'oversold' ? (p.lower - K) / p.lower
     : zone === 'overbought' ? (K - p.upper) / (100 - p.upper) : 0
@@ -65,5 +71,5 @@ export function readState(bars, p = DEFAULTS) {
     if (k[j - 1] <= d[j - 1] && k[j] > d[j]) { cross = { dir: 'up', ago: i - j, inZone: k[j] <= p.lower + 5 }; break }
     if (k[j - 1] >= d[j - 1] && k[j] < d[j]) { cross = { dir: 'down', ago: i - j, inZone: k[j] >= p.upper - 5 }; break }
   }
-  return { k, d, K, D, zone, intensity: Math.min(1, Math.max(0, intensity)), cross }
+  return { K, D, zone, intensity: Math.min(1, Math.max(0, intensity)), cross }
 }

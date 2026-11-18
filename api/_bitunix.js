@@ -13,9 +13,14 @@ async function throttle() {
   if (wait) await new Promise(r => setTimeout(r, wait))
 }
 
-async function getJson(path) {
+async function getJson(path, retry = 2) {
   await throttle()
   const res = await fetch(BASE + path, { headers: { accept: 'application/json' } })
+  // Troppe richieste: aspetto un attimo e riprovo, invece di far fallire tutta la scansione.
+  if (res.status === 429 && retry > 0) {
+    await new Promise(r => setTimeout(r, 1200))
+    return getJson(path, retry - 1)
+  }
   if (!res.ok) throw new Error(`Bitunix ${res.status}`)
   const json = await res.json()
   if (json && typeof json === 'object' && 'code' in json && Number(json.code) !== 0) {
@@ -57,4 +62,17 @@ export async function tradingPairs() {
   return (Array.isArray(data) ? data : [])
     .filter(p => !p.symbolStatus || p.symbolStatus === 'OPEN')
     .map(p => ({ symbol: p.symbol, base: p.base || p.baseCoin || p.symbol.replace(/USDT$/, '') }))
+}
+
+// I titoli più scambiati nelle ultime 24 ore (volume in USDT). Una sola richiesta, tenuta 10 minuti.
+let top = { at: 0, list: [] }
+export async function topSymbols(n = 50) {
+  if (Date.now() - top.at < 10 * 60e3 && top.list.length) return top.list.slice(0, n)
+  const data = await getJson('/api/v1/futures/market/tickers')
+  const list = (Array.isArray(data) ? data : [])
+    .filter(t => /^[A-Z0-9]+USDT$/.test(t.symbol) && Number(t.quoteVol) > 0)
+    .sort((a, b) => Number(b.quoteVol) - Number(a.quoteVol))
+    .map(t => t.symbol)
+  top = { at: Date.now(), list }
+  return list.slice(0, n)
 }

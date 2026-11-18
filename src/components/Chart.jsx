@@ -32,9 +32,12 @@ const gestures = on => ({
 
 // Un solo grafico con due riquadri: stessa scala del tempo e un solo mirino,
 // quindi ogni candela sta esattamente sopra il suo valore di K e D.
-export default function Chart({ bars, k, d, upper, lower, tall }) {
+// fill: occupa tutta l'altezza del contenitore (grafico a tutto schermo).
+// alwaysActive: niente tocco per attivarlo, perché lì non c'è una pagina da scorrere.
+export default function Chart({ bars, k, d, upper, lower, tall, fill = false, alwaysActive = false }) {
   const box = useRef(), host = useRef(), api = useRef({})
-  const [active, setActive] = useState(false)
+  const [touched, setActive] = useState(false)
+  const active = alwaysActive || touched
 
   useEffect(() => {
     const chart = createChart(host.current, { ...options, ...gestures(false) })
@@ -89,6 +92,7 @@ export default function Chart({ bars, k, d, upper, lower, tall }) {
     if (!a.chart) return
     a.chart.applyOptions(gestures(active))
     if (!active) { a.chart.clearCrosshairPosition(); return }
+    if (alwaysActive) return
 
     const y0 = window.scrollY
     const outside = e => { if (!box.current?.contains(e.target)) setActive(false) }
@@ -102,10 +106,10 @@ export default function Chart({ bars, k, d, upper, lower, tall }) {
       window.removeEventListener('scroll', scrolled)
       document.removeEventListener('keydown', esc)
     }
-  }, [active])
+  }, [active, alwaysActive])
 
   return (
-    <div ref={box} className={'chart' + (tall ? ' chart--tall' : '') + (active ? ' is-active' : '')}>
+    <div ref={box} className={'chart' + (tall ? ' chart--tall' : '') + (fill ? ' chart--fill' : '') + (active && !alwaysActive ? ' is-active' : '')}>
       <div ref={host} className="chart__host" />
       {!active && (
         <button type="button" className="chart__veil" onClick={() => setActive(true)} aria-label="Attiva il grafico per spostarlo e ingrandirlo" />

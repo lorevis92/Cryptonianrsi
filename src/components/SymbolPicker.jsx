@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon.jsx'
 
-export const FAVORITES = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XAUUSDT', 'NVDAUSDT', 'TSLAUSDT', 'QQQUSDT']
-
 // Ricerca su tutte le coppie di Bitunix: cripto, oro, azioni, indici.
-export default function SymbolPicker({ current, onPick }) {
+// Senza testo: prima i preferiti, poi tutti gli altri titoli.
+export default function SymbolPicker({ current, favorites, onToggleFavorite, onPick }) {
   const [pairs, setPairs] = useState(null)
   const [error, setError] = useState(null)
   const [q, setQ] = useState('')
@@ -16,12 +15,24 @@ export default function SymbolPicker({ current, onPick }) {
     }).catch(e => setError(e.message))
   }, [])
 
-  const list = useMemo(() => {
-    const src = pairs || FAVORITES
-    const term = q.trim().toUpperCase()
-    if (!term) return FAVORITES.filter(s => !pairs || pairs.includes(s))
-    return src.filter(s => s.includes(term)).slice(0, 60)
-  }, [pairs, q])
+  const term = q.trim().toUpperCase()
+  const found = useMemo(() => (term ? (pairs || favorites).filter(s => s.includes(term)).slice(0, 60) : []), [pairs, favorites, term])
+  const others = useMemo(() => (pairs || []).filter(s => !favorites.includes(s)), [pairs, favorites])
+
+  const row = s => {
+    const fav = favorites.includes(s)
+    return (
+      <li key={s} className="picker__row">
+        <button className={'picker__item' + (s === current ? ' is-on' : '')} onClick={() => onPick(s)}>
+          <span>{s.replace(/USDT$/, '')}</span><span className="picker__quote">USDT</span>
+        </button>
+        <button className={'star' + (fav ? ' is-on' : '')} onClick={() => onToggleFavorite(s)} aria-pressed={fav}
+          aria-label={fav ? `Togli ${s} dai preferiti` : `Aggiungi ${s} ai preferiti`}>
+          <Icon name="star" size={18} filled={fav} />
+        </button>
+      </li>
+    )
+  }
 
   return (
     <div className="picker">
@@ -29,18 +40,26 @@ export default function SymbolPicker({ current, onPick }) {
         <Icon name="search" size={16} />
         <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="BTC, oro, NVDA…" aria-label="Cerca un titolo" />
       </label>
-      {!q && <p className="hint">Preferiti</p>}
       {error && <p className="hint">Non riesco a caricare l'elenco di Bitunix. Puoi scegliere tra i preferiti.</p>}
-      <ul className="picker__list">
-        {list.map(s => (
-          <li key={s}>
-            <button className={'picker__item' + (s === current ? ' is-on' : '')} onClick={() => onPick(s)}>
-              <span>{s.replace(/USDT$/, '')}</span><span className="picker__quote">USDT</span>
-            </button>
-          </li>
-        ))}
-        {q && pairs && !list.length && <li className="hint">Nessuna coppia trovata per «{q}»</li>}
-      </ul>
+
+      {term ? (
+        <ul className="picker__list">
+          {found.map(row)}
+          {pairs && !found.length && <li className="hint">Nessuna coppia trovata per «{q}»</li>}
+        </ul>
+      ) : (
+        <>
+          <p className="hint">Preferiti</p>
+          <ul className="picker__list">
+            {favorites.map(row)}
+            {!favorites.length && <li className="hint">Tocca la stellina accanto a un titolo per aggiungerlo qui.</li>}
+          </ul>
+          {others.length > 0 && <>
+            <p className="hint">Tutti i titoli</p>
+            <ul className="picker__list">{others.map(row)}</ul>
+          </>}
+        </>
+      )}
     </div>
   )
 }

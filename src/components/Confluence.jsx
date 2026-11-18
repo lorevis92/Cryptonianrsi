@@ -21,7 +21,8 @@ export default function Confluence({ states, unlocked, params, onLocked }) {
     : ratio >= 0.6 ? `Confluenza forte verso il ${side === 'oversold' ? 'long' : 'short'}`
     : 'Confluenza parziale'
 
-  const rows = [...TIMEFRAMES].reverse()
+  // Stesso ordine delle card: 1m in alto, 1d in basso
+  const rows = TIMEFRAMES
   return (
     <section className="confluence" aria-label="Confluenza dei timeframe">
       <div className="confluence__head">

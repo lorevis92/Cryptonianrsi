@@ -27,12 +27,14 @@ input { font: inherit; color: inherit; }
 p { margin: 0; }
 
 /* ---------- Barra in alto ---------- */
-.top {
+.topbar {
   position: sticky; top: 0; z-index: 10;
-  display: flex; align-items: center; gap: 12px;
-  padding: calc(14px + env(safe-area-inset-top)) 20px 14px;
   background: rgba(6, 7, 11, .86); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--hair);
+}
+.top {
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(14px + env(safe-area-inset-top)) 20px 10px;
 }
 .brand { flex: 1; min-width: 0; }
 .brand__name { font-family: var(--serif); font-size: 21px; color: var(--gold-light); letter-spacing: .01em; white-space: nowrap; }
@@ -42,6 +44,25 @@ p { margin: 0; }
   border: 1px solid var(--gold-line); border-radius: var(--r-ctl); font-size: 14px; font-weight: 500;
 }
 .symbol-btn span { color: var(--muted); font-weight: 400; }
+.symbol { display: inline-flex; align-items: center; gap: 2px; }
+.star { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-ctl); color: var(--muted-2); transition: color .2s; }
+.star:hover { color: var(--gold); }
+.star.is-on { color: var(--gold); }
+
+/* Fila dei preferiti: scorre in orizzontale */
+.chips {
+  position: relative; display: flex; gap: 8px; padding: 0 20px 12px;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; height: 30px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 999px;
+  font-size: 13px; font-weight: 500; color: var(--muted); transition: border-color .2s, color .2s, background-color .2s;
+}
+.chip:hover { border-color: var(--gold-line); color: var(--ivory); }
+.chip.is-on { border-color: var(--gold); color: var(--gold-light); background: rgba(200, 169, 106, .08); }
+.chips__empty { font-size: 13px; color: var(--muted); line-height: 30px; white-space: nowrap; }
+
 .icon-btn { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-ctl); color: var(--gold); }
 .icon-btn:hover { background: var(--graphite-2); }
 
@@ -50,7 +71,7 @@ p { margin: 0; }
 .layout__cards { display: grid; gap: 16px; margin-top: 28px; }
 @media (min-width: 980px) {
   .layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 32px; padding-top: 28px; }
-  .layout__side { position: sticky; top: 92px; align-self: start; }
+  .layout__side { position: sticky; top: 132px; align-self: start; }
   .layout__cards { margin-top: 0; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); }
 }
 
@@ -119,10 +140,21 @@ p { margin: 0; }
 .card__skeleton { height: 250px; border-radius: 12px; background: linear-gradient(90deg, transparent, rgba(200, 169, 106, .05), transparent) var(--graphite-2); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
-.chart__price { height: 160px; }
-.chart__osc { height: 96px; border-top: 1px solid var(--hair); }
-.chart--tall .chart__price { height: 360px; }
-.chart--tall .chart__osc { height: 160px; }
+.card__msg .card__retry { margin-top: 14px; }
+
+/* Grafico: inattivo finché non lo tocchi, così il dito e la rotella scorrono la pagina */
+.chart {
+  position: relative; margin: 0 -6px; padding: 0 6px; border: 1px solid transparent; border-radius: 12px;
+  transition: transform .25s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease), background-color .25s;
+}
+.chart__host { height: 256px; }
+.chart--tall .chart__host { height: 520px; }
+.chart__veil { position: absolute; inset: 0; z-index: 2; width: 100%; cursor: pointer; touch-action: pan-y pinch-zoom; border-radius: 12px; }
+.chart.is-active {
+  z-index: 3; transform: scale(1.012); border-color: rgba(235, 211, 154, .6);
+  background: var(--graphite); box-shadow: 0 10px 30px rgba(0, 0, 0, .55), 0 0 0 1px rgba(235, 211, 154, .12);
+}
+.chart.is-active .chart__host { touch-action: none; }
 
 .card.is-locked { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
 .card.is-locked .card__head { flex: none; }

@@ -43,9 +43,13 @@ export default function TimeframeCard({ symbol, tf, unlocked, params, onState, o
         <span><i className="sw sw--d" />D <b>{fmtK(s?.D)}</b></span>
         {s?.cross && <span className={`card__cross is-${s.cross.dir}`}><Icon name={s.cross.dir} size={14} />{s.cross.dir === 'up' ? 'K sopra D' : 'K sotto D'}</span>}
       </div>
-      {error && !bars ? <p className="card__msg">{error}. Riprovo tra poco.</p>
-        : loading && !bars ? <div className="card__skeleton" aria-label="Caricamento" />
-        : <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} tall={big} />}
+      {/* Il grafico si monta solo quando ci sono candele e lo stato è calcolato.
+          Appena sbloccato un timeframe, per un render loading è ancora false: resta lo scheletro. */}
+      {bars?.length && s
+        ? <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} tall={big} />
+        : bars && !bars.length ? <p className="card__msg">Nessuna candela disponibile per questo titolo.</p>
+        : error && !loading ? <p className="card__msg">{error}. Riprovo tra poco.</p>
+        : <div className="card__skeleton" aria-label="Caricamento" />}
     </article>
   )
 }

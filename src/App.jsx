@@ -70,39 +70,44 @@ export default function App() {
   return (
     <div className={'app is-' + view}>
       <div className="topbar">
+        {/* Telefono: in alto mappa, titolo e menu; sotto il selettore del titolo con i preferiti.
+            Da 980px tutto su una riga, con i preferiti sotto. */}
         <header className="top">
           {view === 'detail' && (
-            <button className="icon-btn" onClick={backToMap} aria-label="Torna alla mappa"><Icon name="bubbles" size={20} /></button>
+            <button className="icon-btn top__back" onClick={backToMap} aria-label="Torna alla mappa"><Icon name="bubbles" size={20} /></button>
           )}
           <div className="brand">
             <span className="brand__name">Cryptonian <em>RSI</em></span>
           </div>
-          {view === 'map' ? (
-            <button className="symbol-btn" onClick={() => setSheet('symbol')} aria-label="Cerca un titolo">
-              <Icon name="search" size={15} /><span>Cerca</span>
-            </button>
-          ) : (
-            <div className="symbol">
-            <button className={'star' + (isFav ? ' is-on' : '')} onClick={() => toggleFavorite(symbol)} aria-pressed={isFav}
-              aria-label={isFav ? `Togli ${symbol} dai preferiti` : `Aggiungi ${symbol} ai preferiti`}>
-              <Icon name="star" size={18} filled={isFav} />
-            </button>
-            <button className="symbol-btn" onClick={() => setSheet('symbol')} aria-label={`Titolo: ${symbol}. Cambia`}>
-              {symbol.replace(/USDT$/, '')}<span>USDT</span><Icon name="chevron" size={14} />
-            </button>
-          </div>
-          )}
-          <button className="icon-btn" onClick={() => setSheet('menu')} aria-label="Apri il menu"><Icon name="menu" /></button>
-        </header>
-        <nav className="chips" ref={chips} aria-label="Preferiti">
-          {favorites.length
-            ? favorites.map(f => (
-              <button key={f} className={'chip' + (view === 'detail' && f === symbol ? ' is-on' : '')} onClick={() => openSymbol(f)} aria-current={view === 'detail' && f === symbol ? 'true' : undefined}>
-                {f.replace(/USDT$/, '')}
+          <div className="symbol">
+            {view === 'map' ? (
+              <button className="symbol-btn" onClick={() => setSheet('symbol')} aria-label="Cerca un titolo">
+                <Icon name="search" size={15} /><span className="symbol-btn__quote">Cerca</span>
               </button>
-            ))
-            : <span className="chips__empty">Nessun preferito: tocca la stellina accanto al titolo.</span>}
-        </nav>
+            ) : <>
+              <button className={'star' + (isFav ? ' is-on' : '')} onClick={() => toggleFavorite(symbol)} aria-pressed={isFav}
+                aria-label={isFav ? `Togli ${symbol} dai preferiti` : `Aggiungi ${symbol} ai preferiti`}>
+                <Icon name="star" size={18} filled={isFav} />
+              </button>
+              <button className="symbol-btn" onClick={() => setSheet('symbol')} aria-label={`Titolo: ${symbol}. Cambia`}>
+                <span className="symbol-btn__base">{symbol.replace(/USDT$/, '')}</span>
+                {symbol.endsWith('USDT') && <span className="symbol-btn__quote">USDT</span>}
+                <Icon name="chevron" size={14} />
+              </button>
+            </>}
+          </div>
+          <button className="icon-btn top__menu" onClick={() => setSheet('menu')} aria-label="Apri il menu"><Icon name="menu" /></button>
+          <span className="top__break" aria-hidden="true" />
+          <nav className="chips" ref={chips} aria-label="Preferiti">
+            {favorites.length
+              ? favorites.map(f => (
+                <button key={f} className={'chip' + (view === 'detail' && f === symbol ? ' is-on' : '')} onClick={() => openSymbol(f)} aria-current={view === 'detail' && f === symbol ? 'true' : undefined}>
+                  {f.replace(/USDT$/, '')}
+                </button>
+              ))
+              : <span className="chips__empty">Tocca la stellina per aggiungere preferiti.</span>}
+          </nav>
+        </header>
       </div>
 
       {view === 'map' ? (

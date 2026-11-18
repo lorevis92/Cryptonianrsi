@@ -252,6 +252,11 @@ p { margin: 0; }
 .legend .mini-rings { flex: none; }
 .legend__text { flex: 1 1 190px; min-width: 0; display: grid; gap: 8px; font-size: 13px; color: var(--muted); }
 .legend__text b { font-weight: 500; color: var(--ivory); }
+.legend__text em { font-style: normal; }
+.t-os { color: var(--long); } .t-ob { color: var(--short); }
+.legend__weights { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); }
+.legend__weights span { white-space: nowrap; }
+.legend__weights b { font-family: var(--serif); font-size: 15px; color: var(--gold-light); }
 .legend__keys { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ivory); }
 .key { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; border-radius: 50%; }
 .key--os { background: var(--long); }
@@ -276,7 +281,9 @@ p { margin: 0; }
 .rank__row.is-oversold small { color: var(--long); }
 .rank__row.is-overbought small { color: var(--short); }
 .rank__sig { white-space: nowrap; margin-left: 8px; font-style: normal; color: var(--gold-light); }
-.rank__score { font-family: var(--serif); font-size: 24px; color: var(--gold-light); font-variant-numeric: lining-nums tabular-nums; min-width: 2ch; text-align: right; }
+.rank__score { display: inline-flex; align-items: baseline; font-family: var(--serif); font-size: 24px; color: var(--gold-light); font-variant-numeric: lining-nums tabular-nums; min-width: 2ch; justify-content: flex-end; white-space: nowrap; }
+/* Il massimo in piccolo accanto, per far capire la scala */
+.rank__score small { margin-left: 1px; font-size: 12px; color: var(--gold); opacity: .7; }
 .rank__row.is-oversold .rank__score { color: var(--long); }
 .rank__row.is-overbought .rank__score { color: var(--short); }
 .rank__empty { padding: 24px 0; }

@@ -3,7 +3,7 @@ import BubbleCanvas from './BubbleCanvas.jsx'
 import MiniRings from './MiniRings.jsx'
 import Icon from './Icon.jsx'
 import { useScan } from '../lib/useScan.js'
-import { alignment, SIGNAL_TIMEFRAMES } from '../lib/alignment.js'
+import { alignment, SIGNAL_TIMEFRAMES, WEIGHTS } from '../lib/alignment.js'
 import { bubbleData } from '../lib/bubbleDraw.js'
 import { TIMEFRAMES } from '../lib/plans.js'
 import { ZONE_LABEL } from '../lib/format.js'
@@ -11,6 +11,7 @@ import { load, save } from '../lib/storage.js'
 
 const FILTERS = [['all', 'Tutti'], ['oversold', 'Ipervenduto'], ['overbought', 'Ipercomprato']]
 const VIEWS = [['bubbles', 'Bolle'], ['list', 'Elenco']]
+const fmtW = w => String(w).replace('.', ',')
 const listJoin = a => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} o ${a[a.length - 1]}`)
 
 // Pagina iniziale: l'allineamento dello Stochastic RSI sui 7 timeframe, a colpo d'occhio.
@@ -65,14 +66,20 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
         <div className="legend" id="legenda">
           <MiniRings size={92} rings={{ '1d': 0.9, '4h': 0.7, '1h': 0.45, '15m': 0, '5m': -0.3, '3m': -0.6, '1m': -0.95 }} signal />
           <div className="legend__text">
-            <p><b>Ogni anello è un timeframe.</b> All'esterno 1d, poi 4h, 1h, 15m, 5m, 3m, fino a 1m al centro. Gli anelli esterni sono più spessi perché contano di più.</p>
+            <p><b>Lo Stochastic RSI</b> va da 0 a 100 e dice se un prezzo ha corso troppo: sotto {params.lower} è <em className="t-os">ipervenduto</em> (possibile rialzo), sopra {params.upper} è <em className="t-ob">ipercomprato</em> (possibile ribasso).</p>
+            <p><b>Ogni anello è un timeframe.</b> All'esterno 1d, poi 4h, 1h, 15m, 5m, 3m, fino a 1m al centro. Più K è estremo, più il colore è pieno.</p>
             <p className="legend__keys">
               <span><i className="key key--os" />Ipervenduto</span>
               <span><i className="key key--ob" />Ipercomprato</span>
               <span><i className="key key--n" />Neutro</span>
               <span><i className="key key--sig" />Entrata</span>
             </p>
-            <p>Più K è estremo, più il colore è pieno. La grandezza della bolla è l'allineamento: quanti timeframe sono nella stessa zona e quanto sono estremi.</p>
+            <p><b>Il punteggio, da 0 a 100,</b> misura quanto i timeframe sono d'accordo: quanti sono nella stessa zona e quanto sono estremi. I timeframe grandi pesano di più:</p>
+            <p className="legend__weights">
+              {Object.entries(WEIGHTS).map(([tf, w]) => <span key={tf}>{tf} <b>{fmtW(w)}</b></span>)}
+            </p>
+            <p>100 è il massimo: tutti e 7 i timeframe nella stessa zona, al massimo estremo. 0 vuol dire nessun timeframe in zona. Il colore del numero dice la direzione: <em className="t-os">ciano ipervenduto</em>, <em className="t-ob">rosa ipercomprato</em>.</p>
+            <p><b>Nelle Bolle lo stesso punteggio decide la grandezza:</b> più è alto, più la bolla è grande e luminosa.</p>
             <p>L'anello dorato è il segnale d'entrata: K ha appena incrociato D dentro la zona su {listJoin(SIGNAL_TIMEFRAMES)}.</p>
           </div>
         </div>
@@ -100,7 +107,7 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
                     {r.signal && <em className="rank__sig">Entrata {r.signal.tf}</em>}
                   </small>
                 </span>
-                <span className="rank__score" aria-label={`Punteggio ${Math.round(r.score * 100)} su 100`}>{Math.round(r.score * 100)}</span>
+                <span className="rank__score" aria-label={`Punteggio ${Math.round(r.score * 100)} su 100`}>{Math.round(r.score * 100)}<small aria-hidden="true">/100</small></span>
               </button>
             </li>
           ))}

@@ -1,0 +1,18 @@
+# Tiene calda la fotografia della mappa: ogni 5 minuti richiama /api/snapshot,
+# così la funzione su Vercel ricalcola i timeframe scaduti anche quando nessuno apre l'app.
+# Gratis perché il repository è pubblico. Si attiva impostando la variabile del repository
+# SNAPSHOT_URL (Settings > Secrets and variables > Actions > Variables), per esempio
+# https://tuo-progetto.vercel.app/api/snapshot
+name: Fotografia della mappa
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+jobs:
+  warm:
+    if: ${{ vars.SNAPSHOT_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Richiama la fotografia
+        run: curl -sS -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" --max-time 150 -H "Cache-Control: no-cache" "${{ vars.SNAPSHOT_URL }}"

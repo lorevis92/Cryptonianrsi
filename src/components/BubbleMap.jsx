@@ -3,7 +3,7 @@ import BubbleCanvas from './BubbleCanvas.jsx'
 import MiniRings from './MiniRings.jsx'
 import Icon from './Icon.jsx'
 import { useScan } from '../lib/useScan.js'
-import { alignment, SIGNAL_TIMEFRAMES, WEIGHTS } from '../lib/alignment.js'
+import { alignment, SIGNAL_TIMEFRAMES, WEIGHTS, IN_ZONE_BASE } from '../lib/alignment.js'
 import { bubbleData } from '../lib/bubbleDraw.js'
 import { TIMEFRAMES } from '../lib/plans.js'
 import { ZONE_LABEL } from '../lib/format.js'
@@ -11,6 +11,16 @@ import { load, save } from '../lib/storage.js'
 
 const FILTERS = [['all', 'Tutti'], ['oversold', 'Ipervenduto'], ['overbought', 'Ipercomprato']]
 const VIEWS = [['bubbles', 'Bolle'], ['list', 'Elenco']]
+// "aggiornato 3 min fa"
+function ago(ms) {
+  const m = Math.floor(ms / 60e3)
+  if (m < 1) return 'adesso'
+  if (m < 60) return `${m} min fa`
+  const h = Math.floor(m / 60)
+  if (h < 24) return h === 1 ? "un'ora fa" : `${h} ore fa`
+  const d = Math.floor(h / 24)
+  return d === 1 ? 'ieri' : `${d} giorni fa`
+}
 const fmtW = w => String(w).replace('.', ',')
 const listJoin = a => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} o ${a[a.length - 1]}`)
 
@@ -22,7 +32,10 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
   useEffect(() => save('mapView', view), [view])
   useEffect(() => save('mapFilter', filter), [filter])
 
-  const { tails, symbols, loaded, error } = useScan(favorites, params)
+  const { tails, symbols, loaded, error, at } = useScan(favorites, params)
+  // Orologio per "aggiornato X min fa"
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30e3); return () => clearInterval(t) }, [])
 
   const rows = useMemo(() => symbols.map((s, rank) => ({ ...bubbleData(s, alignment(tails[s], params)), rank })), [tails, symbols, params])
 
@@ -41,8 +54,9 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
     if (view === 'list') hlRow.current?.scrollIntoView({ block: 'center' })
   }, [view, highlight, !!hl]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const status = error && !loaded ? 'Bitunix non risponde, riprovo tra poco.'
-    : loaded < TIMEFRAMES.length ? `Sto leggendo i timeframe: ${loaded} di ${TIMEFRAMES.length}` : null
+  const status = !loaded ? (error ? 'Bitunix non risponde, riprovo tra poco.' : null)
+    : loaded < TIMEFRAMES.length && !at ? `Sto leggendo i timeframe: ${loaded} di ${TIMEFRAMES.length}`
+    : at ? `Aggiornato ${ago(Math.max(0, now - at))}${error ? ' · nuovo tentativo tra poco' : ''}` : null
 
   return (
     <section className="map" aria-label="Mappa dell'allineamento">
@@ -74,18 +88,18 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
               <span><i className="key key--n" />Neutro</span>
               <span><i className="key key--sig" />Entrata</span>
             </p>
-            <p><b>Il punteggio, da 0 a 100,</b> misura quanto i timeframe sono d'accordo: quanti sono nella stessa zona e quanto sono estremi. I timeframe grandi pesano di più:</p>
+            <p><b>Il punteggio, da 0 a 100,</b> conta soprattutto quanti timeframe sono nella stessa zona: sotto {params.lower} o sopra {params.upper}. I timeframe grandi pesano di più:</p>
             <p className="legend__weights">
               {Object.entries(WEIGHTS).map(([tf, w]) => <span key={tf}>{tf} <b>{fmtW(w)}</b></span>)}
             </p>
-            <p>100 è il massimo: tutti e 7 i timeframe nella stessa zona, al massimo estremo. 0 vuol dire nessun timeframe in zona. Il colore del numero dice la direzione: <em className="t-os">ciano ipervenduto</em>, <em className="t-ob">rosa ipercomprato</em>.</p>
+            <p>Ogni timeframe in zona porta il {Math.round(IN_ZONE_BASE * 100)}% del suo peso; il resto è un piccolo bonus che cresce quanto più K è estremo. Tutti e 7 nella stessa zona fanno almeno {Math.round(IN_ZONE_BASE * 100)}, fino a 100. 0 vuol dire nessun timeframe in zona. Un timeframe nella zona opposta toglie punti. Il punteggio non è relativo: il primo dell'elenco non ha per forza 100. Il colore del numero dice la direzione: <em className="t-os">ciano ipervenduto</em>, <em className="t-ob">rosa ipercomprato</em>.</p>
             <p><b>Nelle Bolle lo stesso punteggio decide la grandezza:</b> più è alto, più la bolla è grande e luminosa.</p>
             <p>L'anello dorato è il segnale d'entrata: K ha appena incrociato D dentro la zona su {listJoin(SIGNAL_TIMEFRAMES)}.</p>
           </div>
         </div>
       )}
 
-      {status && <p className="map__status" role="status">{status}</p>}
+      <p className="map__status">{status || ' '}</p>
 
       {view === 'bubbles' ? (
         <div className="map__stage">

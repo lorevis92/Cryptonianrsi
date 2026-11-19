@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Chart from './Chart.jsx'
 import Icon from './Icon.jsx'
+import { TrendMark } from './TrendBadge.jsx'
 import { useCandles } from '../lib/useCandles.js'
 import { readState } from '../lib/stochrsi.js'
 import { TF_LABEL, planFor } from '../lib/plans.js'
 import { fmtK, fmtPrice, ZONE_LABEL } from '../lib/format.js'
 import { isDesktop, reducedMotion, smoothLayout } from '../lib/motion.js'
 
-export default function TimeframeCard({ symbol, tf, unlocked, params, onState, onLocked }) {
+export default function TimeframeCard({ symbol, tf, unlocked, params, onState, onLocked, trend }) {
   const { bars, error, loading } = useCandles(symbol, tf, unlocked)
   const s = useMemo(() => (bars ? readState(bars, params) : null), [bars, params])
   const [big, setBig] = useState(false)   // computer: card a tutta la riga
@@ -43,7 +44,7 @@ export default function TimeframeCard({ symbol, tf, unlocked, params, onState, o
   return (
     <article ref={card} className={`card is-${s?.zone || 'neutral'} ${pulse ? 'is-pulse' : ''} ${big ? 'is-big' : ''}`} style={{ '--i': s?.intensity || 0, viewTransitionName: `card-${tf}` }} aria-label={TF_LABEL[tf]}>
       <header className="card__head">
-        <span className="card__tf">{tf}</span>
+        <span className="card__tf">{tf}<TrendMark t={trend} tf={tf} /></span>
         <span className="card__zone">{s?.K != null ? ZONE_LABEL[s.zone] : ''}</span>
         <span className="card__price">{fmtPrice(last?.c)}</span>
         <button className="icon-btn" onClick={expand} aria-label={big ? 'Riduci il grafico' : 'Ingrandisci il grafico'} aria-pressed={big || full}><Icon name="expand" size={16} /></button>

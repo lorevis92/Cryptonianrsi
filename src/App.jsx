@@ -18,6 +18,7 @@ import { alignment } from './lib/alignment.js'
 import { bubbleData } from './lib/bubbleDraw.js'
 import { TIMEFRAMES, planById } from './lib/plans.js'
 import { DEFAULTS } from './lib/stochrsi.js'
+import { MAIN_TREND_TF } from './lib/trend.js'
 import { load, save } from './lib/storage.js'
 
 const MENU = [['plan', 'Il tuo piano'], ['indicator', 'Indicatore'], ['notify', 'Notifiche'], ['legal', 'Note legali']]
@@ -84,16 +85,17 @@ export default function App() {
 
   // Bolla del titolo nel dettaglio: i timeframe sbloccati arrivano in tempo reale dalle card,
   // quelli bloccati dalla stessa scansione della mappa (che è visibile su tutti i piani).
-  const lockedTfs = TIMEFRAMES.filter(tf => !unlocked.includes(tf))
-  const lockedTails = useSymbolTails(symbol, view === 'detail' ? lockedTfs : [], params)
+  // Dalla stessa scansione arriva anche il trend EMA 200 di ogni timeframe.
+  const scanTails = useSymbolTails(symbol, view === 'detail' ? TIMEFRAMES : [], params)
+  const trends = useMemo(() => Object.fromEntries(TIMEFRAMES.map(tf => [tf, scanTails[tf]?.t])), [scanTails])
   const bubble = useMemo(() => {
     const tails = {}
     for (const tf of TIMEFRAMES) {
       if (unlocked.includes(tf)) { if (states[tf]?.k) tails[tf] = { k: states[tf].k, d: states[tf].d } }
-      else if (lockedTails[tf]) tails[tf] = lockedTails[tf]
+      else if (scanTails[tf]) tails[tf] = scanTails[tf]
     }
-    return bubbleData(symbol, alignment(tails, params))
-  }, [symbol, states, lockedTails, unlocked, params])
+    return { ...bubbleData(symbol, alignment(tails, params)), trend: trends[MAIN_TREND_TF] }
+  }, [symbol, states, scanTails, trends, unlocked, params])
   const bubbleToMap = useCallback(() => { setHighlight(symbol); backToMap() }, [symbol, backToMap])
 
   const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', notify: 'Notifiche', legal: 'Note legali', risk: 'Calcola il rischio' }
@@ -147,12 +149,12 @@ export default function App() {
       ) : (
         <main className="layout">
           <aside className="layout__side">
-            <Confluence states={states} unlocked={unlocked} params={params} onLocked={openPlans} bubble={bubble} onBubble={bubbleToMap} onRisk={() => setSheet('risk')} />
+            <Confluence states={states} unlocked={unlocked} params={params} onLocked={openPlans} bubble={bubble} onBubble={bubbleToMap} onRisk={() => setSheet('risk')} trends={trends} />
           </aside>
           <div className="layout__cards">
             {TIMEFRAMES.map(tf => (
               <CardBoundary key={symbol + tf} tf={tf}>
-                <TimeframeCard symbol={symbol} tf={tf} unlocked={unlocked.includes(tf)} params={params} onState={onState} onLocked={openPlans} />
+                <TimeframeCard symbol={symbol} tf={tf} unlocked={unlocked.includes(tf)} params={params} onState={onState} onLocked={openPlans} trend={trends[tf]} />
               </CardBoundary>
             ))}
           </div>

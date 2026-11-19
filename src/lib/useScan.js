@@ -165,8 +165,8 @@ export function useScan(favorites, params) {
   }, [version, favKey, paramKey, error])
 }
 
-// Dettaglio di un titolo: la coda di K e D per i timeframe indicati (quelli che le card non scaricano,
-// cioè i bloccati dal piano). Usa i dati della mappa se sono freschi, altrimenti la stessa scansione
+// Dettaglio di un titolo: la coda di K e D e il trend EMA 200 (t) per i timeframe indicati. K e D servono
+// per i timeframe che le card non scaricano (i bloccati dal piano), il trend per tutti. Usa i dati della mappa se sono freschi, altrimenti la stessa scansione
 // ristretta a quel titolo. Così la bolla del dettaglio è la stessa della mappa, con tutti e 7 gli anelli.
 export function useSymbolTails(symbol, tfs, params) {
   const [version, setVersion] = useState(0)

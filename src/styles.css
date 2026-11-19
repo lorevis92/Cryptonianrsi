@@ -11,6 +11,8 @@
   --ivory: #EDEAE2;
   --muted: #8A8F9C;
   --muted-2: #5E636E;
+  --slate: #8A96AA;   /* trend ribassista (EMA 200): distinto dal rosa dello Stoch RSI */
+  --caution: #D9A441; /* lettura di cautela */
   --serif: 'Bodoni Moda', 'Didot', Georgia, serif;
   --sans: 'Instrument Sans', system-ui, sans-serif;
   --ease: cubic-bezier(.5, 0, .2, 1);
@@ -429,3 +431,34 @@ p { margin: 0; }
 .gate__ok { width: 100%; }
 .gate .legal-link { justify-self: center; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { .gate { animation: none; } }
+
+/* ---------- Trend EMA 200 (semaforo di contesto) ---------- */
+/* Oro chiaro = rialzista, ardesia = ribassista: mai ciano/rosa, che restano dello Stoch RSI */
+.trend { position: relative; flex: none; display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 7px; border: 1px solid var(--hair); border-radius: 999px; font-size: 11px; font-weight: 400; line-height: 1; white-space: nowrap; color: var(--muted); vertical-align: 1px; cursor: help; }
+.trend.is-up { color: var(--gold-light); border-color: var(--gold-line); }
+.trend.is-down { color: var(--slate); border-color: #262A33; }
+.trend.is-none { color: var(--muted-2); }
+.trend > span:first-child { font-size: 8px; }
+.trend.is-tip { z-index: 30; }
+.trend__tip { position: absolute; z-index: 30; right: 0; top: calc(100% + 6px); padding: 6px 10px; border: 1px solid var(--gold-line); border-radius: var(--r-ctl); background: var(--graphite-2); font-size: 12px; color: var(--ivory); white-space: nowrap; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); pointer-events: none; }
+.rank__label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rank__sym { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank__name small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 380px) { .rank__label .trend__text { display: none; } .rank__label .trend { padding: 0 6px; } }
+
+.trend-mark { display: inline-block; width: 10px; margin-left: 5px; font-family: var(--sans); font-size: 8px; line-height: 1; vertical-align: 2px; color: var(--muted-2); cursor: help; }
+.trend-mark.is-up { color: var(--gold-light); }
+.trend-mark.is-down { color: var(--slate); }
+.rung__tf { white-space: nowrap; width: 44px; }
+.card__tf { white-space: nowrap; }
+
+.context { margin-top: 12px; display: flex; align-items: center; gap: 7px; min-height: 20px; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.context__glyph { flex: none; font-size: 9px; }
+.context.is-up, .context.is-aligned { color: var(--gold-light); }
+.context.is-down { color: var(--slate); }
+.context.is-caution { color: var(--caution); }
+.context.is-strong { color: var(--ivory); }
+.legend__cases { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.legend__cases .tone { display: inline; margin: 0 6px 0 0; font-weight: 500; white-space: normal; }
+.tone.is-aligned { color: var(--gold-light); } .tone.is-caution { color: var(--caution); } .tone.is-strong { color: var(--ivory); }
+.context__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }

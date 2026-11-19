@@ -16,13 +16,14 @@ export function newNode(extra) {
 }
 
 // Imposta gli obiettivi; l'impulso dorato parte solo quando il segnale compare.
-export function setTargets(n, { rings, score, side, signal, label, highlight = false }, { now, reduced }) {
+export function setTargets(n, { rings, score, side, signal, label, trend, highlight = false }, { now, reduced }) {
   n.rt = rings || {}
   n.tg = score || 0
   if (side && side !== 'neutral') n.gs = side
   if (signal && !n.sig && !reduced) n.pulseAt = now
   n.sig = !!signal
   n.hl = highlight
+  n.trend = trend
   if (label != null) n.label = label
 }
 
@@ -121,6 +122,16 @@ export function drawBubble(ctx, n, now, { hover = false } = {}) {
     ctx.strokeText(n.label, x, y + 0.5)
     ctx.fillStyle = hover || n.hlA > 0.5 ? '#EBD39A' : '#EDEAE2'
     ctx.fillText(n.label, x, y + 0.5)
+    // Trend principale (EMA 200): piccolo triangolo sotto il nome, oro se rialzista, ardesia se ribassista
+    if (r >= 20 && (n.trend === 1 || n.trend === -1)) {
+      const gs = Math.max(7, fs * 0.55)
+      ctx.font = `${gs}px "Instrument Sans", system-ui, sans-serif`
+      const gy = y + fs * 0.5 + gs * 0.75
+      ctx.lineWidth = 2.5
+      ctx.strokeText(n.trend === 1 ? '▲' : '▼', x, gy)
+      ctx.fillStyle = n.trend === 1 ? 'rgba(235,211,154,0.9)' : 'rgba(138,150,170,0.95)'
+      ctx.fillText(n.trend === 1 ? '▲' : '▼', x, gy)
+    }
   }
 }
 

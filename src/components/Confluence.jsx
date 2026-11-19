@@ -1,11 +1,13 @@
 import Icon from './Icon.jsx'
 import Bubble from './Bubble.jsx'
+import { TrendMark } from './TrendBadge.jsx'
+import { combined, trendOf, trendExplain, MAIN_TREND_TF } from '../lib/trend.js'
 import { TIMEFRAMES, planFor } from '../lib/plans.js'
 import { fmtK, ZONE_LABEL, STRONG_LABEL, ATTENTION_LABEL, MOMENTUM_LABEL } from '../lib/format.js'
 
 // Il cuore dell'app: tutti i timeframe sulla stessa scala 0–100.
 // Quando i pallini si mettono in colonna nella stessa zona, c'è confluenza.
-export default function Confluence({ states, unlocked, params, onLocked, bubble, onBubble, onRisk }) {
+export default function Confluence({ states, unlocked, params, onLocked, bubble, onBubble, onRisk, trends = {} }) {
   const active = TIMEFRAMES.filter(tf => unlocked.includes(tf))
   const ready = active.filter(tf => states[tf]?.K != null)
   const os = ready.filter(tf => states[tf].zone === 'oversold').length
@@ -23,6 +25,13 @@ export default function Confluence({ states, unlocked, params, onLocked, bubble,
   const sub = !ready.length || count === 0 ? `${momentum}K sopra D in ${kUp} su ${ready.length}`
     : ratio >= 0.6 ? `${STRONG_LABEL[side]} · ${ATTENTION_LABEL[side]}`
     : 'Confluenza parziale'
+
+  // Semaforo di contesto: zona dello Stoch RSI (sui 7 timeframe, come la bolla) + trend principale
+  const main = trends[MAIN_TREND_TF]
+  const mix = bubble && combined(bubble.side, main)
+  const ctx = main === undefined ? null
+    : mix ? { tone: mix.tone, glyph: trendOf(main).glyph, text: mix.text }
+    : { tone: trendOf(main).id, glyph: trendOf(main).glyph, text: main ? `${trendOf(main).label} sul ${MAIN_TREND_TF}` : `Trend ${MAIN_TREND_TF}: dati insufficienti` }
 
   // Stesso ordine delle card: 1m in alto, 1d in basso
   const rows = TIMEFRAMES
@@ -42,6 +51,10 @@ export default function Confluence({ states, unlocked, params, onLocked, bubble,
         )}
       </div>
 
+      <p className={`context is-${ctx?.tone || 'none'}`} title={main !== undefined ? trendExplain(main) : undefined}>
+        {ctx ? <><span className="context__glyph" aria-hidden="true">{ctx.glyph}</span><span className="context__text">{ctx.text}</span></> : ' '}
+      </p>
+
       <div className="ladder" style={{ '--lo': params.lower + '%', '--hi': params.upper + '%' }}>
         <div className="ladder__zones" aria-hidden="true"><span className="z-lo" /><span className="z-hi" /><span className="l-lo" /><span className="l-hi" /></div>
         {rows.map(tf => {
@@ -50,7 +63,7 @@ export default function Confluence({ states, unlocked, params, onLocked, bubble,
           const k = on && s?.K != null ? s.K : null
           return (
             <div key={tf} className={`rung ${on ? '' : 'is-locked'} is-${on && s ? s.zone : 'neutral'}`} style={{ '--i': on && s ? s.intensity : 0 }}>
-              <span className="rung__tf">{tf}</span>
+              <span className="rung__tf">{tf}{on && <TrendMark t={trends[tf]} tf={tf} />}</span>
               <div className="rung__track">
                 {k != null && <span className="rung__dot" style={{ left: k + '%' }} />}
               </div>

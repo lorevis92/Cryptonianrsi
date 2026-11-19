@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import BubbleCanvas from './BubbleCanvas.jsx'
 import MiniRings from './MiniRings.jsx'
 import Icon from './Icon.jsx'
+import TrendBadge from './TrendBadge.jsx'
+import { MAIN_TREND_TF, EMA_LENGTH } from '../lib/trend.js'
 import { useScan } from '../lib/useScan.js'
 import { alignment, SIGNAL_TIMEFRAMES, WEIGHTS, IN_ZONE_BASE, STRONG_SCORE } from '../lib/alignment.js'
 import { bubbleData } from '../lib/bubbleDraw.js'
@@ -37,7 +39,7 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
   const [now, setNow] = useState(Date.now())
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30e3); return () => clearInterval(t) }, [])
 
-  const rows = useMemo(() => symbols.map((s, rank) => ({ ...bubbleData(s, alignment(tails[s], params)), rank })), [tails, symbols, params])
+  const rows = useMemo(() => symbols.map((s, rank) => ({ ...bubbleData(s, alignment(tails[s], params)), trend: tails[s]?.[MAIN_TREND_TF]?.t, rank })), [tails, symbols, params])
 
   const match = r => filter === 'all' || (r.side === filter && r.score > 0)
   const items = useMemo(() => rows.map(r => ({ ...r, visible: match(r), signal: !!r.signal })), [rows, filter]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -88,6 +90,15 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
               <span><i className="key key--n" />Neutro</span>
               <span><i className="key key--sig" />Zona di attenzione</span>
             </p>
+            <p><b>L'EMA {EMA_LENGTH}</b> è la media del prezzo delle ultime {EMA_LENGTH} candele, che dà più peso alle più recenti. Indica la direzione di fondo: prezzo sopra la media <span className="trend is-up">▲ Trend rialzista</span>, sotto <span className="trend is-down">▼ Trend ribassista</span>. Il badge accanto a ogni titolo usa il {MAIN_TREND_TF}; nel dettaglio ogni timeframe ha il suo triangolo.</p>
+            <p>Insieme allo Stoch RSI dà quattro letture:</p>
+            <ul className="legend__cases">
+              <li><b className="tone is-aligned">Ipervenduto in trend rialzista</b> il prezzo è sceso in fretta, ma resta sopra la media di fondo.</li>
+              <li><b className="tone is-caution">Ipervenduto, ma trend ribassista · rischio alto</b> il prezzo è sceso in fretta dentro una discesa più lunga.</li>
+              <li><b className="tone is-aligned">Ipercomprato in trend ribassista</b> il prezzo è salito in fretta, ma resta sotto la media di fondo.</li>
+              <li><b className="tone is-strong">Forte spinta rialzista · ipercomprato</b> il prezzo è salito in fretta dentro una salita più lunga.</li>
+            </ul>
+            <p>Sono descrizioni di quello che è successo, non previsioni.</p>
             <p><b>Il punteggio, da 0 a 100,</b> conta soprattutto quanti timeframe sono nella stessa zona: sotto {params.lower} o sopra {params.upper}. I timeframe grandi pesano di più:</p>
             <p className="legend__weights">
               {Object.entries(WEIGHTS).map(([tf, w]) => <span key={tf}>{tf} <b>{fmtW(w)}</b></span>)}
@@ -116,7 +127,7 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
                 <span className="rank__pos">{i + 1}</span>
                 <MiniRings rings={r.rings} signal={!!r.signal} />
                 <span className="rank__name">
-                  {r.label}
+                  <span className="rank__label"><span className="rank__sym">{r.label}</span><TrendBadge t={r.trend} /></span>
                   <small>
                     {r.loaded ? (r.side === 'neutral' ? 'Nessuna zona estrema' : r.score >= STRONG_SCORE ? STRONG_LABEL[r.side] : ZONE_LABEL[r.side]) : 'In lettura'}
                     {r.signal && <em className="rank__sig">{signalLabel(r.signal.tf)}</em>}

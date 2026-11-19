@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     for (const part of parts) {
       if (!part) continue
       const rows = {}
-      for (const r of part.rows) rows[r.s] = { k: r.k, d: r.d, c: round(r.c) }
+      for (const r of part.rows) rows[r.s] = { k: r.k, d: r.d, c: round(r.c), t: r.t }
       tfs[part.tf] = { at: part.at, rows }
       if (part.tf === '1m' || !top.length) top = part.symbols
     }

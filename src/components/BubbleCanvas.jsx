@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
 import { drawBubble, easeNode, newNode, setTargets, snapNode } from '../lib/bubbleDraw.js'
+import { trendOf, trendExplain } from '../lib/trend.js'
 
 // Mappa a bolle su canvas: fisica leggera (d3-force), valori che cambiano lentamente.
 // Il disegno della singola bolla è in lib/bubbleDraw.js, lo stesso della bolla nel dettaglio.
@@ -131,6 +132,7 @@ export default function BubbleCanvas({ items, highlight = null, onPick, onBlank,
       const n = ev.pointerType === 'mouse' ? at(ev) : null
       hover = n?.id || null
       cvs.current.style.cursor = n ? 'pointer' : 'default'
+      cvs.current.title = n && (n.trend === 1 || n.trend === -1) ? `${n.label} · ${trendOf(n.trend).label} · ${trendExplain(n.trend)}` : ''
       if (reduced) draw(performance.now())
     }
     const c = cvs.current

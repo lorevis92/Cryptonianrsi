@@ -461,7 +461,7 @@ p { margin: 0; }
 .card__state .card__zone { flex: 0 1 auto; }
 .card__state .trend-word { flex: none; }
 .card__state .card__zone:not(:empty) + .trend-word::before { content: '·'; margin-right: 2px; color: var(--muted-2); }
-@container (max-width: 380px) { .card__state .trend-word__long, .card__state .trend-word__glyph, .card__state .card__zone:not(:empty) + .trend-word::before { display: none; } .card__state .trend-word__short { display: inline; } }
+@container (max-width: 380px) { .card__head { gap: 7px; } .card__tf { min-width: 36px; } .card__state .trend-word__long, .card__state .trend-word__glyph, .card__state .card__zone:not(:empty) + .trend-word::before { display: none; } .card__state .trend-word__short { display: inline; } }
 .card__tf { white-space: nowrap; }
 
 .context { margin-top: 12px; display: flex; align-items: center; gap: 7px; min-height: 20px; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -491,3 +491,5 @@ p { margin: 0; }
 /* Etichetta dell'EMA 200 quando la linea è fuori dall'area visibile: ferma sul bordo dell'asse dei prezzi */
 .chart__edge { position: absolute; z-index: 1; right: 6px; height: 18px; padding: 0 4px; border-radius: 3px; background: rgba(235, 211, 154, .7); color: #06070B; font-size: 11px; line-height: 18px; text-align: center; white-space: nowrap; overflow: hidden; pointer-events: none; }
 .chart__edge[hidden] { display: none; }
+/* Il velo copre solo l'area delle candele (destra e basso li imposta Chart.jsx con la misura degli assi) */
+.chart__veil { width: auto; right: 64px; bottom: 28px; border-radius: 12px 0 0 0; }

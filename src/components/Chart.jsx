@@ -25,12 +25,18 @@ const options = {
   },
 }
 
-// Gesti del grafico: spenti finché il grafico non viene attivato con un tocco o un clic.
-// Assi come su TradingView, con le opzioni della libreria: trascinare l'asse dei prezzi allunga o comprime
-// in verticale, l'asse del tempo in orizzontale (mouse e dito); doppio clic o doppio tocco torna alla scala automatica.
+// Gesti del grafico.
+// - Assi sempre attivi, come su TradingView (opzioni della libreria): trascinare l'asse dei prezzi allunga o comprime
+//   in verticale, l'asse del tempo in orizzontale, col mouse e col dito; doppio clic o doppio tocco torna alla scala automatica.
+//   Il doppio clic/tocco sull'asse del tempo lo gestiamo noi (torna alle ultime 90 candele): quello della libreria
+//   verrebbe applicato al fotogramma dopo e lo sovrascriverebbe.
+//   Nota: la libreria tratta il trascinamento verticale del dito sull'asse dei prezzi come scorrimento della pagina
+//   se vertTouchDrag è spento, e quello orizzontale sull'asse del tempo se horzTouchDrag è spento: per questo restano accesi.
+// - L'area delle candele, finché il grafico non è attivo, è coperta dal velo: lì il dito e la rotella scorrono la pagina.
+//   Rotella e pizzico funzionano solo con il grafico attivo.
 const gestures = on => ({
-  handleScroll: { mouseWheel: on, pressedMouseMove: on, horzTouchDrag: on, vertTouchDrag: false },
-  handleScale: { mouseWheel: on, pinch: on, axisPressedMouseMove: { time: on, price: on }, axisDoubleClickReset: { time: on, price: on } },
+  handleScroll: { mouseWheel: on, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
+  handleScale: { mouseWheel: on, pinch: on, axisPressedMouseMove: { time: true, price: true }, axisDoubleClickReset: { time: false, price: true } }, // tempo: reset nostro (90 candele), vedi onDbl/onTouchEnd
 })
 const VISIBLE_BARS = 90 // candele visibili con la scala automatica del tempo
 const DOUBLE_TAP = 320
@@ -40,7 +46,7 @@ const DOUBLE_TAP = 320
 // fill: occupa tutta l'altezza del contenitore (grafico a tutto schermo).
 // alwaysActive: niente tocco per attivarlo, perché lì non c'è una pagina da scorrere.
 export default function Chart({ bars, k, d, upper, lower, tall, ema = null, precision = null, fill = false, alwaysActive = false }) {
-  const box = useRef(), host = useRef(), edge = useRef(), api = useRef({})
+  const box = useRef(), host = useRef(), edge = useRef(), veil = useRef(), api = useRef({})
   const [touched, setActive] = useState(false)
   const active = alwaysActive || touched
   const [custom, setCustom] = useState({ price: false, time: false }) // scala cambiata dall'utente: compare "Auto"
@@ -62,6 +68,19 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     const kLine = chart.addSeries(LineSeries, { color: '#19E6D0', lineWidth: 2, priceLineVisible: false, autoscaleInfoProvider: fixed }, 1)
     const a = (api.current = { chart, candles, emaLine, kLine, dLine, lines: [], fitted: false, n: 0, userAt: 0 })
 
+    // Sul telefono il dito sull'asse dei prezzi non deve scorrere la pagina (touch-action: none);
+    // sull'asse del tempo il gesto orizzontale è della scala, quello verticale resta della pagina (pan-y).
+    const axisTouch = () => {
+      const rows = [...(chart.chartElement().querySelector('table')?.rows || [])]
+      rows.forEach((tr, i) => {
+        const last = i === rows.length - 1
+        const cells = [...tr.cells]
+        if (last) cells.forEach(td => { td.style.touchAction = 'pan-y' })
+        else if (cells.length > 1) cells[cells.length - 1].style.touchAction = 'none'
+      })
+    }
+    axisTouch()
+
     // Scala automatica del tempo: le ultime VISIBLE_BARS candele
     a.fitTime = () => { if (a.n) chart.timeScale().setVisibleLogicalRange({ from: a.n - VISIBLE_BARS, to: a.n + 2 }) }
     // La scala dei prezzi è "manuale" quando la libreria ha spento l'autoScale (asse trascinato)
@@ -76,6 +95,11 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     a.placeEdge = () => {
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(() => {
+        // Il velo copre solo l'area delle candele: gli assi restano liberi
+        if (veil.current) {
+          veil.current.style.right = `${6 + chart.priceScale('right', 0).width()}px`
+          veil.current.style.bottom = `${chart.timeScale().height()}px`
+        }
         const tag = edge.current
         if (!tag) return
         const v = a.emaLast
@@ -97,6 +121,8 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     const onRange = () => { a.placeEdge(); if (Date.now() - a.userAt < 400) setCustom(c => (c.time ? c : { ...c, time: true })) }
     chart.timeScale().subscribeVisibleLogicalRangeChange(onRange)
     chart.timeScale().subscribeSizeChange(a.placeEdge)
+    const ro = new ResizeObserver(() => { axisTouch(); a.placeEdge() })
+    ro.observe(host.current)
 
     const el = host.current
     const mark = () => { a.userAt = Date.now(); a.placeEdge() }
@@ -106,7 +132,14 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     // Doppio clic / doppio tocco sull'asse del tempo: torna alle ultime VISIBLE_BARS candele
     // (la libreria rimette la sua spaziatura; per l'asse dei prezzi basta la sua).
     const onTimeAxis = y => y > el.getBoundingClientRect().height - chart.timeScale().height()
-    const resetTimeAt = y => { if (!onTimeAxis(y)) return; setTimeout(() => { a.fitTime(); setCustom(c => ({ ...c, time: false })) }, 0) }
+    // Dopo che la libreria ha chiuso il suo gesto (lo applica al fotogramma successivo), altrimenti lo sovrascrive
+    // (rimpicciolito al massimo la libreria corregge ancora dopo: per questo lo riapplico una seconda volta)
+    const resetTimeAt = y => {
+      if (!onTimeAxis(y)) return
+      const fit = () => { a.fitTime(); setCustom(c => ({ ...c, time: false })) }
+      setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(fit)), 30)
+      setTimeout(fit, 220)
+    }
     const onDbl = e => { resetTimeAt(e.clientY - el.getBoundingClientRect().top); setTimeout(sync, 0) }
     let lastTap = 0
     const onTouchEnd = e => {
@@ -124,6 +157,7 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     return () => {
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(onRange)
       chart.timeScale().unsubscribeSizeChange(a.placeEdge)
+      ro.disconnect()
       cancelAnimationFrame(raf)
       el.removeEventListener('pointerdown', onDown, true)
       el.removeEventListener('pointermove', onMove, true)
@@ -225,7 +259,7 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
       <div ref={host} className="chart__host" />
       <span ref={edge} className="chart__edge" hidden />
       {!active && (
-        <button type="button" className="chart__veil" onClick={() => setActive(true)} aria-label="Attiva il grafico per spostarlo e ingrandirlo" />
+        <button ref={el => { veil.current = el; if (el) api.current.placeEdge?.() }} type="button" className="chart__veil" onClick={() => setActive(true)} aria-label="Attiva il grafico per spostarlo e ingrandirlo" />
       )}
       {(custom.price || custom.time) && (
         <button type="button" className="chart__auto" onClick={resetScale} aria-label="Torna alla scala automatica">Auto</button>

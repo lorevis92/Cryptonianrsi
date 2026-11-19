@@ -444,12 +444,24 @@ p { margin: 0; }
 .rank__label { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .rank__sym { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rank__name small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 380px) { .rank__label .trend__text { display: none; } .rank__label .trend { padding: 0 6px; } }
+.trend__short { display: none; }
+@media (max-width: 380px) { .rank__label .trend__text { display: none; } .rank__label .trend__short { display: inline; } .rank__label .trend { padding: 0 6px; } }
 
-.trend-mark { display: inline-block; width: 10px; margin-left: 5px; font-family: var(--sans); font-size: 8px; line-height: 1; vertical-align: 2px; color: var(--muted-2); cursor: help; }
-.trend-mark.is-up { color: var(--gold-light); }
-.trend-mark.is-down { color: var(--slate); }
-.rung__tf { white-space: nowrap; width: 44px; }
+/* Trend a parole nel dettaglio: stesso stile delle zone ("Ipervenduto"), oro chiaro / ardesia */
+.trend-word { display: inline-flex; align-items: baseline; gap: 4px; font-family: var(--sans); font-size: 12px; font-weight: 400; white-space: nowrap; color: var(--muted-2); cursor: help; }
+.trend-word.is-up { color: var(--gold-light); }
+.trend-word.is-down { color: var(--slate); }
+.trend-word__glyph { font-size: 8px; }
+.trend-word__short { display: none; }
+.rung__tf { display: inline-flex; align-items: baseline; gap: 8px; white-space: nowrap; width: 110px; flex: none; }
+.rung__tf .trend-word { font-size: 11px; }
+/* Card: "Ipervenduto · Trend rialzista"; se la card è stretta (telefono) "Ipervenduto · Rialzista" */
+.card { container-type: inline-size; }
+.card__state { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 6px; overflow: hidden; white-space: nowrap; }
+.card__state .card__zone { flex: 0 1 auto; }
+.card__state .trend-word { flex: none; }
+.card__state .card__zone:not(:empty) + .trend-word::before { content: '·'; margin-right: 2px; color: var(--muted-2); }
+@container (max-width: 380px) { .card__state .trend-word__long, .card__state .trend-word__glyph, .card__state .card__zone:not(:empty) + .trend-word::before { display: none; } .card__state .trend-word__short { display: inline; } }
 .card__tf { white-space: nowrap; }
 
 .context { margin-top: 12px; display: flex; align-items: center; gap: 7px; min-height: 20px; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

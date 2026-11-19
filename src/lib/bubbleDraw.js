@@ -122,15 +122,19 @@ export function drawBubble(ctx, n, now, { hover = false } = {}) {
     ctx.strokeText(n.label, x, y + 0.5)
     ctx.fillStyle = hover || n.hlA > 0.5 ? '#EBD39A' : '#EDEAE2'
     ctx.fillText(n.label, x, y + 0.5)
-    // Trend principale (EMA 200): piccolo triangolo sotto il nome, oro se rialzista, ardesia se ribassista
-    if (r >= 20 && (n.trend === 1 || n.trend === -1)) {
-      const gs = Math.max(7, fs * 0.55)
-      ctx.font = `${gs}px "Instrument Sans", system-ui, sans-serif`
-      const gy = y + fs * 0.5 + gs * 0.75
-      ctx.lineWidth = 2.5
-      ctx.strokeText(n.trend === 1 ? '▲' : '▼', x, gy)
-      ctx.fillStyle = n.trend === 1 ? 'rgba(235,211,154,0.9)' : 'rgba(138,150,170,0.95)'
-      ctx.fillText(n.trend === 1 ? '▲' : '▼', x, gy)
+    // Trend principale (EMA 200) a parole sotto il nome, oro se rialzista, ardesia se ribassista.
+    // Solo se ci sta senza appesantire; sulle bolle piccole si legge toccandole (dettaglio) o al passaggio del mouse.
+    if (r >= 24 && (n.trend === 1 || n.trend === -1)) {
+      const word = n.trend === 1 ? 'Rialzista' : 'Ribassista'
+      const gs = Math.max(8, Math.min(11, fs * 0.5))
+      ctx.font = `400 ${gs}px "Instrument Sans", system-ui, sans-serif`
+      if (ctx.measureText(word).width <= r * 1.45) {
+        const gy = y + fs * 0.5 + gs * 0.85
+        ctx.lineWidth = 2.5
+        ctx.strokeText(word, x, gy)
+        ctx.fillStyle = n.trend === 1 ? 'rgba(235,211,154,0.92)' : 'rgba(138,150,170,0.95)'
+        ctx.fillText(word, x, gy)
+      }
     }
   }
 }

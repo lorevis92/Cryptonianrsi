@@ -13,15 +13,23 @@ export default function TrendBadge({ t, tf = MAIN_TREND_TF, compact = false }) {
   const toggle = e => { e.stopPropagation(); e.preventDefault(); setTip(v => !v) }
   return (
     <span className={`trend is-${x.id}` + (tip ? ' is-tip' : '')} title={why} onClick={toggle} aria-label={`${x.label}: ${why}`}>
-      <span aria-hidden="true">{x.glyph}</span>{!compact && <span className="trend__text" aria-hidden="true">{x.label}</span>}
+      <span aria-hidden="true">{x.glyph}</span>
+      {!compact && <><span className="trend__text" aria-hidden="true">{x.label}</span><span className="trend__short" aria-hidden="true">{x.short}</span></>}
       {tip && <span className="trend__tip" role="status">{why}</span>}
     </span>
   )
 }
 
-// Solo il triangolo, per i timeframe del dettaglio
-export function TrendMark({ t, tf }) {
-  if (t === undefined || t === null) return <span className="trend-mark" aria-hidden="true" />
+// Trend di un timeframe nel dettaglio, sempre a parole (il triangolo solo insieme alla parola).
+// size: 'short' = "Rialzista" (scala dei timeframe), 'auto' = "Trend rialzista", breve se la card è stretta.
+export function TrendMark({ t, tf, size = 'short' }) {
+  if (t === undefined || t === null) return null
   const x = trendOf(t)
-  return <span className={`trend-mark is-${x.id}`} title={trendExplain(t, tf)} aria-label={`${tf}: ${x.label}`}>{x.glyph}</span>
+  const word = x.id === 'none' ? (size === 'short' ? 'Dati insuff.' : x.label) : null
+  return (
+    <span className={`trend-word is-${x.id} is-${size}`} title={trendExplain(t, tf)} aria-label={`${tf}: ${x.label}`}>
+      {x.id !== 'none' && <span className="trend-word__glyph" aria-hidden="true">{x.glyph}</span>}
+      {word ?? (size === 'short' ? x.short : <><span className="trend-word__long">{x.label}</span><span className="trend-word__short">{x.short}</span></>)}
+    </span>
+  )
 }

@@ -72,7 +72,7 @@ export default function Confluence({ states, unlocked, params, onLocked, bubble,
           const k = on && s?.K != null ? s.K : null
           return (
             <div key={tf} className={`rung ${on ? '' : 'is-locked'} is-${on && s ? s.zone : 'neutral'}`} style={{ '--i': on && s ? s.intensity : 0 }}>
-              <span className="rung__tf">{tf}{on && <TrendMark t={trends[tf]} tf={tf} />}</span>
+              <span className="rung__tf">{tf}{on && <TrendMark t={trends[tf]} tf={tf} size="short" />}</span>
               <div className="rung__track">
                 {k != null && <span className="rung__dot" style={{ left: k + '%' }} />}
               </div>

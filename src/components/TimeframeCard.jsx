@@ -44,8 +44,11 @@ export default function TimeframeCard({ symbol, tf, unlocked, params, onState, o
   return (
     <article ref={card} className={`card is-${s?.zone || 'neutral'} ${pulse ? 'is-pulse' : ''} ${big ? 'is-big' : ''}`} style={{ '--i': s?.intensity || 0, viewTransitionName: `card-${tf}` }} aria-label={TF_LABEL[tf]}>
       <header className="card__head">
-        <span className="card__tf">{tf}<TrendMark t={trend} tf={tf} /></span>
-        <span className="card__zone">{s?.K != null ? ZONE_LABEL[s.zone] : ''}</span>
+        <span className="card__tf">{tf}</span>
+        <span className="card__state">
+          <span className="card__zone">{s?.K != null ? ZONE_LABEL[s.zone] : ''}</span>
+          {s?.K != null && <TrendMark t={trend} tf={tf} size="auto" />}
+        </span>
         <span className="card__price">{fmtPrice(last?.c, precision)}</span>
         <button className="icon-btn" onClick={expand} aria-label={big ? 'Riduci il grafico' : 'Ingrandisci il grafico'} aria-pressed={big || full}><Icon name="expand" size={16} /></button>
       </header>

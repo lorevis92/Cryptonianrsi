@@ -45,7 +45,7 @@ Concept: strumento di precisione. Scala graduata incisa in oro, le uniche cose a
 - Movimento nel dettaglio: una sola animazione automatica (i pallini della scala che arrivano al loro valore) più l'impulso dorato sull'incrocio K/D in zona.
 - Movimento nella mappa: entrata animata una sola volta per sessione, poi le bolle galleggiano piano e si spingono tra loro; grandezza e colori cambiano lentamente; l'anello dorato del segnale pulsa una volta quando compare.
 - Ingrandire un grafico: da telefono sale dal basso a tutto schermo (timeframe, K, D, chiudi); da computer la card si allarga a tutta la riga con View Transitions (altrimenti FLIP).
-- I grafici sono inattivi finché non li tocchi: il dito e la rotella scorrono la pagina. Attivi = leggera scala e bordo dorato più acceso.
+- I grafici sono inattivi finché non li tocchi: il dito e la rotella scorrono la pagina. Col mouse gli assi (scala) sono sempre attivi; col dito anche gli assi funzionano solo dopo aver attivato il grafico. Attivi = leggera scala e bordo dorato più acceso.
 - Rispetta sempre `prefers-reduced-motion`: niente deriva, niente impulsi, valori subito al loro posto.
 - Il selettore del piano e la pagina Notifiche stanno nel menu, non sempre in vista. I timeframe bloccati si vedono sbiaditi con il lucchetto.
 - Prima il telefono; da 980px in su colonna di confluenza fissa a sinistra e card a griglia a destra.

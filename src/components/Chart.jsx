@@ -26,18 +26,19 @@ const options = {
 }
 
 // Gesti del grafico.
-// - Assi sempre attivi, come su TradingView (opzioni della libreria): trascinare l'asse dei prezzi allunga o comprime
+// - Assi come su TradingView (opzioni della libreria): col mouse sempre attivi; col dito solo dopo aver toccato il grafico per attivarlo. Trascinare l'asse dei prezzi allunga o comprime
 //   in verticale, l'asse del tempo in orizzontale, col mouse e col dito; doppio clic o doppio tocco torna alla scala automatica.
 //   Il doppio clic/tocco sull'asse del tempo lo gestiamo noi (torna alle ultime 90 candele): quello della libreria
 //   verrebbe applicato al fotogramma dopo e lo sovrascriverebbe.
 //   Nota: la libreria tratta il trascinamento verticale del dito sull'asse dei prezzi come scorrimento della pagina
 //   se vertTouchDrag è spento, e quello orizzontale sull'asse del tempo se horzTouchDrag è spento: per questo restano accesi.
-// - L'area delle candele, finché il grafico non è attivo, è coperta dal velo: lì il dito e la rotella scorrono la pagina.
+// - Finché il grafico non è attivo il velo copre l'area delle candele (col dito anche gli assi): lì il dito e la rotella scorrono la pagina.
 //   Rotella e pizzico funzionano solo con il grafico attivo.
 const gestures = on => ({
   handleScroll: { mouseWheel: on, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
   handleScale: { mouseWheel: on, pinch: on, axisPressedMouseMove: { time: true, price: true }, axisDoubleClickReset: { time: false, price: true } }, // tempo: reset nostro (90 candele), vedi onDbl/onTouchEnd
 })
+const FINE_POINTER = () => typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches
 const VISIBLE_BARS = 90 // candele visibili con la scala automatica del tempo
 const DOUBLE_TAP = 320
 
@@ -96,7 +97,9 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(() => {
         // Il velo copre solo l'area delle candele: gli assi restano liberi
-        if (veil.current) {
+        // Col mouse il velo copre solo l'area delle candele: gli assi restano sempre attivi.
+        // Col dito copre tutto il grafico, assi compresi: finché non lo tocchi, il dito scorre la pagina.
+        if (veil.current && FINE_POINTER()) {
           veil.current.style.right = `${6 + chart.priceScale('right', 0).width()}px`
           veil.current.style.bottom = `${chart.timeScale().height()}px`
         }

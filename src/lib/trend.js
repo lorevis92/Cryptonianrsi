@@ -28,15 +28,15 @@ export const trendExplain = (t, tf = MAIN_TREND_TF) => {
 }
 
 // Zona dello Stoch RSI + trend principale → lettura combinata, sempre descrittiva.
-// tone: 'aligned' (zona e trend concordi), 'caution' (giallo), 'strong'
+// tone: 'up' / 'down' (zona e trend concordi: stesso colore), 'caution' (giallo ocra), 'strong' (avorio)
 export function combined(side, t) {
   if (side !== 'oversold' && side !== 'overbought') return null
   if (t !== 1 && t !== -1) return null
   if (side === 'oversold') return t === 1
-    ? { tone: 'aligned', text: 'Ipervenduto in trend rialzista' }
+    ? { tone: 'up', text: 'Ipervenduto in trend rialzista' }
     : { tone: 'caution', text: 'Ipervenduto, ma trend ribassista · rischio alto' }
   return t === -1
-    ? { tone: 'aligned', text: 'Ipercomprato in trend ribassista' }
+    ? { tone: 'down', text: 'Ipercomprato in trend ribassista' }
     : { tone: 'strong', text: 'Forte spinta rialzista · ipercomprato' }
 }
 

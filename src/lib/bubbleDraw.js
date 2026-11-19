@@ -122,7 +122,7 @@ export function drawBubble(ctx, n, now, { hover = false } = {}) {
     ctx.strokeText(n.label, x, y + 0.5)
     ctx.fillStyle = hover || n.hlA > 0.5 ? '#EBD39A' : '#EDEAE2'
     ctx.fillText(n.label, x, y + 0.5)
-    // Trend principale (EMA 200) a parole sotto il nome, oro se rialzista, ardesia se ribassista.
+    // Trend principale (EMA 200) a parole sotto il nome, ciano se rialzista, rosa se ribassista (colori dello Stoch RSI).
     // Solo se ci sta senza appesantire; sulle bolle piccole si legge toccandole (dettaglio) o al passaggio del mouse.
     if (r >= 24 && (n.trend === 1 || n.trend === -1)) {
       const word = n.trend === 1 ? 'Rialzista' : 'Ribassista'
@@ -132,7 +132,7 @@ export function drawBubble(ctx, n, now, { hover = false } = {}) {
         const gy = y + fs * 0.5 + gs * 0.85
         ctx.lineWidth = 2.5
         ctx.strokeText(word, x, gy)
-        ctx.fillStyle = n.trend === 1 ? 'rgba(235,211,154,0.92)' : 'rgba(138,150,170,0.95)'
+        ctx.fillStyle = n.trend === 1 ? `rgba(${CYAN},0.95)` : `rgba(${PINK},0.95)`
         ctx.fillText(word, x, gy)
       }
     }

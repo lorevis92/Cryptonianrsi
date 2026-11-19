@@ -91,14 +91,15 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
               <span><i className="key key--sig" />Zona di attenzione</span>
             </p>
             <p><b>L'EMA {EMA_LENGTH}</b> è la media del prezzo delle ultime {EMA_LENGTH} candele, che dà più peso alle più recenti. Indica la direzione di fondo: prezzo sopra la media <span className="trend is-up">▲ Trend rialzista</span>, sotto <span className="trend is-down">▼ Trend ribassista</span>. Il badge accanto a ogni titolo usa il {MAIN_TREND_TF}; nel dettaglio ogni timeframe ha il suo triangolo.</p>
-            <p>Nei grafici del dettaglio <b className="tone is-aligned">la linea oro è l'EMA {EMA_LENGTH}</b>: prezzo sopra = trend rialzista, sotto = ribassista.</p>
+            <p>Nei grafici del dettaglio <b className="tone is-gold">la linea oro è l'EMA {EMA_LENGTH}</b>: prezzo sopra = trend rialzista, sotto = ribassista.</p>
             <p>Insieme allo Stoch RSI dà quattro letture:</p>
             <ul className="legend__cases">
-              <li><b className="tone is-aligned">Ipervenduto in trend rialzista</b> il prezzo è sceso in fretta, ma resta sopra la media di fondo.</li>
+              <li><b className="tone is-up">Ipervenduto in trend rialzista</b> il prezzo è sceso in fretta, ma resta sopra la media di fondo.</li>
               <li><b className="tone is-caution">Ipervenduto, ma trend ribassista · rischio alto</b> il prezzo è sceso in fretta dentro una discesa più lunga.</li>
-              <li><b className="tone is-aligned">Ipercomprato in trend ribassista</b> il prezzo è salito in fretta, ma resta sotto la media di fondo.</li>
+              <li><b className="tone is-down">Ipercomprato in trend ribassista</b> il prezzo è salito in fretta, ma resta sotto la media di fondo.</li>
               <li><b className="tone is-strong">Forte spinta rialzista · ipercomprato</b> il prezzo è salito in fretta dentro una salita più lunga.</li>
             </ul>
+            <p>Il trend usa gli stessi colori dello Stoch RSI: <span className="t-os">ciano</span> a favore del rialzo, <span className="t-ob">rosa</span> a favore del ribasso. <b>Stesso colore = zona e trend concordano. Colori diversi = cautela.</b></p>
             <p>Sono descrizioni di quello che è successo, non previsioni.</p>
             <p><b>Il punteggio, da 0 a 100,</b> conta soprattutto quanti timeframe sono nella stessa zona: sotto {params.lower} o sopra {params.upper}. I timeframe grandi pesano di più:</p>
             <p className="legend__weights">

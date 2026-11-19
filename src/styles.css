@@ -433,10 +433,11 @@ p { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .gate { animation: none; } }
 
 /* ---------- Trend EMA 200 (semaforo di contesto) ---------- */
-/* Oro chiaro = rialzista, ardesia = ribassista: mai ciano/rosa, che restano dello Stoch RSI */
+/* Stessi colori dello Stoch RSI, "a favore" di rialzo (ciano, come l'ipervenduto) o ribasso (rosa, come l'ipercomprato).
+   Il trend è sempre una pillola con la parola, la zona resta testo: si distinguono a colpo d'occhio. */
 .trend { position: relative; flex: none; display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 7px; border: 1px solid var(--hair); border-radius: 999px; font-size: 11px; font-weight: 400; line-height: 1; white-space: nowrap; color: var(--muted); vertical-align: 1px; cursor: help; }
-.trend.is-up { color: var(--gold-light); border-color: var(--gold-line); }
-.trend.is-down { color: var(--slate); border-color: #262A33; }
+.trend.is-up { color: var(--long); border-color: rgba(25, 230, 208, .3); background: rgba(25, 230, 208, .05); }
+.trend.is-down { color: var(--short); border-color: rgba(255, 79, 123, .3); background: rgba(255, 79, 123, .05); }
 .trend.is-none { color: var(--muted-2); }
 .trend > span:first-child { font-size: 8px; }
 .trend.is-tip { z-index: 30; }
@@ -447,32 +448,31 @@ p { margin: 0; }
 .trend__short { display: none; }
 @media (max-width: 380px) { .rank__label .trend__text { display: none; } .rank__label .trend__short { display: inline; } .rank__label .trend { padding: 0 6px; } }
 
-/* Trend a parole nel dettaglio: stesso stile delle zone ("Ipervenduto"), oro chiaro / ardesia */
-.trend-word { display: inline-flex; align-items: baseline; gap: 4px; font-family: var(--sans); font-size: 12px; font-weight: 400; white-space: nowrap; color: var(--muted-2); cursor: help; }
-.trend-word.is-up { color: var(--gold-light); }
-.trend-word.is-down { color: var(--slate); }
+/* Trend a parole nel dettaglio: pillola come i badge dell'elenco, ciano / rosa */
+.trend-word { display: inline-flex; align-items: center; gap: 4px; height: 17px; padding: 0 5px; border: 1px solid var(--hair); border-radius: 999px; font-family: var(--sans); font-size: 11px; font-weight: 400; line-height: 1; white-space: nowrap; color: var(--muted-2); cursor: help; }
+.trend-word.is-up { color: var(--long); border-color: rgba(25, 230, 208, .3); background: rgba(25, 230, 208, .05); }
+.trend-word.is-down { color: var(--short); border-color: rgba(255, 79, 123, .3); background: rgba(255, 79, 123, .05); }
 .trend-word__glyph { font-size: 8px; }
 .trend-word__short { display: none; }
 .rung__tf { display: inline-flex; align-items: baseline; gap: 8px; white-space: nowrap; width: 110px; flex: none; }
-.rung__tf .trend-word { font-size: 11px; }
+.rung__tf .trend-word__glyph { display: none; }
 /* Card: "Ipervenduto · Trend rialzista"; se la card è stretta (telefono) "Ipervenduto · Rialzista" */
 .card { container-type: inline-size; }
 .card__state { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 6px; overflow: hidden; white-space: nowrap; }
 .card__state .card__zone { flex: 0 1 auto; }
 .card__state .trend-word { flex: none; }
-.card__state .card__zone:not(:empty) + .trend-word::before { content: '·'; margin-right: 2px; color: var(--muted-2); }
-@container (max-width: 380px) { .card__head { gap: 7px; } .card__tf { min-width: 36px; } .card__state .trend-word__long, .card__state .trend-word__glyph, .card__state .card__zone:not(:empty) + .trend-word::before { display: none; } .card__state .trend-word__short { display: inline; } }
+@container (max-width: 380px) { .card__head { gap: 7px; } .card__tf { min-width: 36px; } .card__state .trend-word__long, .card__state .trend-word__glyph { display: none; } .card__state .trend-word__short { display: inline; } }
 .card__tf { white-space: nowrap; }
 
 .context { margin-top: 12px; display: flex; align-items: center; gap: 7px; min-height: 20px; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .context__glyph { flex: none; font-size: 9px; }
-.context.is-up, .context.is-aligned { color: var(--gold-light); }
-.context.is-down { color: var(--slate); }
+.context.is-up { color: var(--long); }
+.context.is-down { color: var(--short); }
 .context.is-caution { color: var(--caution); }
 .context.is-strong { color: var(--ivory); }
 .legend__cases { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .legend__cases .tone { display: inline; margin: 0 6px 0 0; font-weight: 500; white-space: normal; }
-.tone.is-aligned { color: var(--gold-light); } .tone.is-caution { color: var(--caution); } .tone.is-strong { color: var(--ivory); }
+.tone.is-up { color: var(--long); } .tone.is-down { color: var(--short); } .tone.is-gold { color: var(--gold-light); } .tone.is-caution { color: var(--caution); } .tone.is-strong { color: var(--ivory); }
 .context__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 /* Bottone "Auto" del grafico: nell'angolo tra asse dei prezzi e asse del tempo, come su TradingView */

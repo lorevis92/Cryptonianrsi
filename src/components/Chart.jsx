@@ -40,7 +40,7 @@ const DOUBLE_TAP = 320
 // fill: occupa tutta l'altezza del contenitore (grafico a tutto schermo).
 // alwaysActive: niente tocco per attivarlo, perché lì non c'è una pagina da scorrere.
 export default function Chart({ bars, k, d, upper, lower, tall, ema = null, precision = null, fill = false, alwaysActive = false }) {
-  const box = useRef(), host = useRef(), api = useRef({})
+  const box = useRef(), host = useRef(), edge = useRef(), api = useRef({})
   const [touched, setActive] = useState(false)
   const active = alwaysActive || touched
   const [custom, setCustom] = useState({ price: false, time: false }) // scala cambiata dall'utente: compare "Auto"
@@ -51,6 +51,7 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     const emaLine = chart.addSeries(LineSeries, {
       color: 'rgba(235,211,154,0.7)', lineWidth: 1, priceLineVisible: false, lastValueVisible: true,
       crosshairMarkerVisible: false, title: '',
+      autoscaleInfoProvider: () => null, // la scala automatica segue solo le candele
     }, 0)
     const candles = chart.addSeries(CandlestickSeries, {
       upColor: '#19E6D0', downColor: '#FF4F7B', borderVisible: false,
@@ -69,13 +70,36 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
       const price = priceCustom()
       return c.price === price ? c : { ...c, price }
     })
+    // EMA fuori dall'area visibile (la scala segue solo le candele): resta la sua etichetta,
+    // ferma in alto o in basso sull'asse dei prezzi, con il triangolo verso dove sta la linea.
+    let raf = 0
+    a.placeEdge = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        const tag = edge.current
+        if (!tag) return
+        const v = a.emaLast
+        const h = chart.panes()[0]?.getHeight() || 0
+        const y = v == null ? null : emaLine.priceToCoordinate(v)
+        const top = candles.coordinateToPrice(0)
+        if (v == null || !h || (y != null && y >= 0 && y <= h) || top == null) { tag.hidden = true; return }
+        const above = y != null ? y < 0 : v > top
+        tag.hidden = false
+        tag.textContent = `${above ? '▲' : '▼'} ${a.fmtEma ? a.fmtEma(v) : v}`
+        tag.style.top = above ? '2px' : `${h - 20}px`
+        tag.style.width = `${chart.priceScale('right', 0).width()}px`
+        tag.title = `EMA 200 ${above ? 'sopra' : 'sotto'} l'area visibile`
+      })
+    }
+
     // Il tempo è cambiato dall'utente se l'intervallo si sposta durante un suo gesto
     // (non quando arriva una candela nuova o la card cambia misura).
-    const onRange = () => { if (Date.now() - a.userAt < 400) setCustom(c => (c.time ? c : { ...c, time: true })) }
+    const onRange = () => { a.placeEdge(); if (Date.now() - a.userAt < 400) setCustom(c => (c.time ? c : { ...c, time: true })) }
     chart.timeScale().subscribeVisibleLogicalRangeChange(onRange)
+    chart.timeScale().subscribeSizeChange(a.placeEdge)
 
     const el = host.current
-    const mark = () => { a.userAt = Date.now() }
+    const mark = () => { a.userAt = Date.now(); a.placeEdge() }
     const onDown = () => { a.down = true; mark() }
     const onMove = () => { if (a.down) mark() }
     const onUp = () => { if (!a.down) return; a.down = false; mark(); setTimeout(sync, 0) }
@@ -99,6 +123,8 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     el.addEventListener('touchend', onTouchEnd, true)
     return () => {
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(onRange)
+      chart.timeScale().unsubscribeSizeChange(a.placeEdge)
+      cancelAnimationFrame(raf)
       el.removeEventListener('pointerdown', onDown, true)
       el.removeEventListener('pointermove', onMove, true)
       window.removeEventListener('pointerup', onUp, true)
@@ -116,6 +142,7 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     if (!a.chart) return
     for (const i of [0, 1]) a.chart.priceScale('right', i).applyOptions({ autoScale: true })
     a.fitTime()
+    a.placeEdge()
     setCustom({ price: false, time: false })
   }
 
@@ -147,12 +174,15 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     a.kLine.setData(line(k))
     a.dLine.setData(line(d))
     // EMA 200 dal server (stessi valori del semaforo); niente linea se lo storico non basta
-    a.emaLine.setData(ema?.length === bars.length ? line(ema) : [])
+    const hasEma = ema?.length === bars.length
+    a.emaLine.setData(hasEma ? line(ema) : [])
+    a.emaLast = hasEma ? ema[ema.length - 1] : null
     a.n = bars.length
     if (!a.fitted) {
       a.fitTime()
       a.fitted = true
     }
+    a.placeEdge()
   }, [bars, k, d, ema])
 
   // Decimali del prezzo (tick size del simbolo su Bitunix, o in base al prezzo)
@@ -164,6 +194,8 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     const priceFormat = { type: 'price', precision: dec, minMove: Number((10 ** -dec).toFixed(dec)) }
     a.candles.applyOptions({ priceFormat })
     a.emaLine.applyOptions({ priceFormat })
+    a.fmtEma = v => v.toFixed(dec)
+    a.placeEdge()
   }, [dec])
 
   // Attivo / inattivo
@@ -191,6 +223,7 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
   return (
     <div ref={box} className={'chart' + (tall ? ' chart--tall' : '') + (fill ? ' chart--fill' : '') + (active && !alwaysActive ? ' is-active' : '')}>
       <div ref={host} className="chart__host" />
+      <span ref={edge} className="chart__edge" hidden />
       {!active && (
         <button type="button" className="chart__veil" onClick={() => setActive(true)} aria-label="Attiva il grafico per spostarlo e ingrandirlo" />
       )}

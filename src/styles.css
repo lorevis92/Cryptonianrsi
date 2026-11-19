@@ -471,3 +471,11 @@ p { margin: 0; }
 .confluence__sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .confluence__sub.is-tap { position: relative; overflow: visible; cursor: help; }
 .confluence__tip { left: 0; right: auto; }
+
+.risk__why { cursor: help; }
+.risk__whytext { color: var(--ivory); }
+.risk__label { font-size: 13px; color: var(--muted); }
+.risk__out dd.t-os { color: var(--long); }
+/* Etichetta dell'EMA 200 quando la linea è fuori dall'area visibile: ferma sul bordo dell'asse dei prezzi */
+.chart__edge { position: absolute; z-index: 1; right: 6px; height: 18px; padding: 0 4px; border-radius: 3px; background: rgba(235, 211, 154, .7); color: #06070B; font-size: 11px; line-height: 18px; text-align: center; white-space: nowrap; overflow: hidden; pointer-events: none; }
+.chart__edge[hidden] { display: none; }

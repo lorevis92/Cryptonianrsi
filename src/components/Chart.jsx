@@ -25,10 +25,14 @@ const options = {
 }
 
 // Gesti del grafico: spenti finché il grafico non viene attivato con un tocco o un clic.
+// Assi come su TradingView, con le opzioni della libreria: trascinare l'asse dei prezzi allunga o comprime
+// in verticale, l'asse del tempo in orizzontale (mouse e dito); doppio clic o doppio tocco torna alla scala automatica.
 const gestures = on => ({
   handleScroll: { mouseWheel: on, pressedMouseMove: on, horzTouchDrag: on, vertTouchDrag: false },
-  handleScale: { mouseWheel: on, pinch: on, axisPressedMouseMove: on, axisDoubleClickReset: on },
+  handleScale: { mouseWheel: on, pinch: on, axisPressedMouseMove: { time: on, price: on }, axisDoubleClickReset: { time: on, price: on } },
 })
+const VISIBLE_BARS = 90 // candele visibili con la scala automatica del tempo
+const DOUBLE_TAP = 320
 
 // Un solo grafico con due riquadri: stessa scala del tempo e un solo mirino,
 // quindi ogni candela sta esattamente sopra il suo valore di K e D.
@@ -38,6 +42,7 @@ export default function Chart({ bars, k, d, upper, lower, tall, fill = false, al
   const box = useRef(), host = useRef(), api = useRef({})
   const [touched, setActive] = useState(false)
   const active = alwaysActive || touched
+  const [custom, setCustom] = useState({ price: false, time: false }) // scala cambiata dall'utente: compare "Auto"
 
   useEffect(() => {
     const chart = createChart(host.current, { ...options, ...gestures(false) })
@@ -48,9 +53,65 @@ export default function Chart({ bars, k, d, upper, lower, tall, fill = false, al
     const fixed = () => ({ priceRange: { minValue: 0, maxValue: 100 } })
     const dLine = chart.addSeries(LineSeries, { color: '#EBD39A', lineWidth: 1, priceLineVisible: false, lastValueVisible: false, autoscaleInfoProvider: fixed, crosshairMarkerVisible: false }, 1)
     const kLine = chart.addSeries(LineSeries, { color: '#19E6D0', lineWidth: 2, priceLineVisible: false, autoscaleInfoProvider: fixed }, 1)
-    api.current = { chart, candles, kLine, dLine, lines: [], fitted: false }
-    return () => { chart.remove(); api.current = {} }
+    const a = (api.current = { chart, candles, kLine, dLine, lines: [], fitted: false, n: 0, userAt: 0 })
+
+    // Scala automatica del tempo: le ultime VISIBLE_BARS candele
+    a.fitTime = () => { if (a.n) chart.timeScale().setVisibleLogicalRange({ from: a.n - VISIBLE_BARS, to: a.n + 2 }) }
+    // La scala dei prezzi è "manuale" quando la libreria ha spento l'autoScale (asse trascinato)
+    const priceCustom = () => [0, 1].some(i => chart.priceScale('right', i).options().autoScale === false)
+    const sync = () => setCustom(c => {
+      const price = priceCustom()
+      return c.price === price ? c : { ...c, price }
+    })
+    // Il tempo è cambiato dall'utente se l'intervallo si sposta durante un suo gesto
+    // (non quando arriva una candela nuova o la card cambia misura).
+    const onRange = () => { if (Date.now() - a.userAt < 400) setCustom(c => (c.time ? c : { ...c, time: true })) }
+    chart.timeScale().subscribeVisibleLogicalRangeChange(onRange)
+
+    const el = host.current
+    const mark = () => { a.userAt = Date.now() }
+    const onDown = () => { a.down = true; mark() }
+    const onMove = () => { if (a.down) mark() }
+    const onUp = () => { if (!a.down) return; a.down = false; mark(); setTimeout(sync, 0) }
+    // Doppio clic / doppio tocco sull'asse del tempo: torna alle ultime VISIBLE_BARS candele
+    // (la libreria rimette la sua spaziatura; per l'asse dei prezzi basta la sua).
+    const onTimeAxis = y => y > el.getBoundingClientRect().height - chart.timeScale().height()
+    const resetTimeAt = y => { if (!onTimeAxis(y)) return; setTimeout(() => { a.fitTime(); setCustom(c => ({ ...c, time: false })) }, 0) }
+    const onDbl = e => { resetTimeAt(e.clientY - el.getBoundingClientRect().top); setTimeout(sync, 0) }
+    let lastTap = 0
+    const onTouchEnd = e => {
+      const t = e.changedTouches[0]
+      if (Date.now() - lastTap < DOUBLE_TAP && t) resetTimeAt(t.clientY - el.getBoundingClientRect().top)
+      lastTap = Date.now()
+      setTimeout(sync, 0)
+    }
+    el.addEventListener('pointerdown', onDown, true)
+    el.addEventListener('pointermove', onMove, true)
+    window.addEventListener('pointerup', onUp, true)
+    el.addEventListener('wheel', mark, { capture: true, passive: true })
+    el.addEventListener('dblclick', onDbl, true)
+    el.addEventListener('touchend', onTouchEnd, true)
+    return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(onRange)
+      el.removeEventListener('pointerdown', onDown, true)
+      el.removeEventListener('pointermove', onMove, true)
+      window.removeEventListener('pointerup', onUp, true)
+      el.removeEventListener('wheel', mark, { capture: true })
+      el.removeEventListener('dblclick', onDbl, true)
+      el.removeEventListener('touchend', onTouchEnd, true)
+      chart.remove()
+      api.current = {}
+    }
   }, [])
+
+  // Bottone "Auto": scala automatica su prezzi (entrambi i riquadri) e tempo
+  const resetScale = () => {
+    const a = api.current
+    if (!a.chart) return
+    for (const i of [0, 1]) a.chart.priceScale('right', i).applyOptions({ autoScale: true })
+    a.fitTime()
+    setCustom({ price: false, time: false })
+  }
 
   // Altezza dei riquadri
   useEffect(() => {
@@ -79,9 +140,9 @@ export default function Chart({ bars, k, d, upper, lower, tall, fill = false, al
     const line = arr => bars.map((b, i) => (arr?.[i] == null ? { time: toTime(b.t) } : { time: toTime(b.t), value: arr[i] }))
     a.kLine.setData(line(k))
     a.dLine.setData(line(d))
+    a.n = bars.length
     if (!a.fitted) {
-      const n = bars.length
-      a.chart.timeScale().setVisibleLogicalRange({ from: n - 90, to: n + 2 })
+      a.fitTime()
       a.fitted = true
     }
   }, [bars, k, d])
@@ -113,6 +174,9 @@ export default function Chart({ bars, k, d, upper, lower, tall, fill = false, al
       <div ref={host} className="chart__host" />
       {!active && (
         <button type="button" className="chart__veil" onClick={() => setActive(true)} aria-label="Attiva il grafico per spostarlo e ingrandirlo" />
+      )}
+      {(custom.price || custom.time) && (
+        <button type="button" className="chart__auto" onClick={resetScale} aria-label="Torna alla scala automatica">Auto</button>
       )}
     </div>
   )

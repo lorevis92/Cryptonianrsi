@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import Icon from './Icon.jsx'
 import Bubble from './Bubble.jsx'
 import { TrendMark } from './TrendBadge.jsx'
@@ -23,8 +24,12 @@ export default function Confluence({ states, unlocked, params, onLocked, bubble,
   // Linguaggio descrittivo: cosa sta facendo l'indicatore, mai cosa fare
   const momentum = !ready.length ? '' : kUp * 2 > ready.length ? `${MOMENTUM_LABEL.up} · ` : kUp * 2 < ready.length ? `${MOMENTUM_LABEL.down} · ` : ''
   const sub = !ready.length || count === 0 ? `${momentum}K sopra D in ${kUp} su ${ready.length}`
-    : ratio >= 0.6 ? `${STRONG_LABEL[side]} · ${ATTENTION_LABEL[side]}`
+    : ratio >= 0.6 ? ATTENTION_LABEL[side]
     : 'Confluenza parziale'
+  // Con la zona forte, al tocco (o al passaggio del mouse) la descrizione: "Eccesso di ribasso" / "Eccesso di rialzo"
+  const strong = ready.length && count > 0 && ratio >= 0.6 ? STRONG_LABEL[side] : null
+  const [tip, setTip] = useState(false)
+  useEffect(() => { if (!tip) return; const x = setTimeout(() => setTip(false), 3500); return () => clearTimeout(x) }, [tip])
 
   // Semaforo di contesto: zona dello Stoch RSI (sui 7 timeframe, come la bolla) + trend principale
   const main = trends[MAIN_TREND_TF]
@@ -41,7 +46,11 @@ export default function Confluence({ states, unlocked, params, onLocked, bubble,
         <div className={`confluence__count is-${count ? side : 'neutral'}`}>{ready.length ? count : '–'}</div>
         <div className="confluence__text">
           <p className="confluence__headline">{headline}</p>
-          <p className="confluence__sub">{sub}</p>
+          {strong ? (
+            <p className="confluence__sub is-tap" title={strong} onClick={() => setTip(v => !v)} aria-label={`${sub}: ${strong}`}>
+              {sub}{tip && <span className="trend__tip confluence__tip" role="status">{strong}</span>}
+            </p>
+          ) : <p className="confluence__sub">{sub}</p>}
         </div>
         {bubble && (
           <div className="confluence__bubble">

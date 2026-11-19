@@ -462,3 +462,12 @@ p { margin: 0; }
 .legend__cases .tone { display: inline; margin: 0 6px 0 0; font-weight: 500; white-space: normal; }
 .tone.is-aligned { color: var(--gold-light); } .tone.is-caution { color: var(--caution); } .tone.is-strong { color: var(--ivory); }
 .context__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Bottone "Auto" del grafico: nell'angolo tra asse dei prezzi e asse del tempo, come su TradingView */
+.chart__auto { position: absolute; z-index: 3; right: 6px; bottom: 6px; height: 22px; padding: 0 9px; border: 1px solid var(--gold-line); border-radius: 999px; background: rgba(14, 16, 22, .92); font-size: 11px; color: var(--gold-light); animation: fade .2s both; }
+.chart__auto:hover { border-color: var(--gold); }
+.chart--fill .chart__auto { bottom: calc(6px + env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion: reduce) { .chart__auto { animation: none; } }
+.confluence__sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.confluence__sub.is-tap { position: relative; overflow: visible; cursor: help; }
+.confluence__tip { left: 0; right: auto; }

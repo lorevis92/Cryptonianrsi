@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCandles } from '../lib/useCandles.js'
 import { atr, positionSize, ATR_LENGTH, STOP_ATR, RISK_DEFAULT, RISK_HINT, LEVERAGE_WARN } from '../lib/risk.js'
 import { TIMEFRAMES } from '../lib/plans.js'
-import { fmtPrice } from '../lib/format.js'
+import { fmtPrice, priceDecimals } from '../lib/format.js'
 import { load, save } from '../lib/storage.js'
 
 const SIDES = [['long', 'Long'], ['short', 'Short']]
@@ -12,7 +12,7 @@ const money = n => n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximum
 const pct = n => (n * 100).toLocaleString('it-IT', { maximumFractionDigits: n < 0.01 ? 2 : 1 }) + '%'
 const qty = n => n.toLocaleString('it-IT', { maximumSignificantDigits: 4, maximumFractionDigits: n >= 1 ? 3 : 8 })
 // Prezzo da mettere nel campo: stessi decimali di fmtPrice, senza separatore delle migliaia
-const priceInput = v => v.toLocaleString('it-IT', { useGrouping: false, maximumFractionDigits: v >= 1000 ? 2 : v >= 1 ? 3 : v >= 0.01 ? 5 : 8 })
+const priceInput = (v, p) => v.toLocaleString('it-IT', { useGrouping: false, maximumFractionDigits: priceDecimals(v, p) })
 
 // Mini-calcolatore di rischio nel dettaglio del titolo. Fa solo aritmetica sui valori inseriti.
 export default function RiskPanel({ symbol }) {
@@ -25,7 +25,7 @@ export default function RiskPanel({ symbol }) {
   useEffect(() => save('risk', { capital, risk }), [capital, risk])
   useEffect(() => setStopIn(null), [side, tf, symbol])
 
-  const { bars, error } = useCandles(symbol, tf, true)
+  const { bars, precision, error } = useCandles(symbol, tf, true)
   const price = bars?.length ? bars[bars.length - 1].c : null
   const a = useMemo(() => (bars ? atr(bars) : null), [bars])
   const suggested = price && a ? (side === 'long' ? price - STOP_ATR * a : price + STOP_ATR * a) : null
@@ -63,19 +63,19 @@ export default function RiskPanel({ symbol }) {
       </div>
 
       <dl className="risk__facts">
-        <div><dt>Prezzo {name}</dt><dd>{fmtPrice(price)}</dd></div>
-        <div><dt>ATR {ATR_LENGTH} · {tf}</dt><dd>{a ? fmtPrice(a) : '—'}</dd></div>
+        <div><dt>Prezzo {name}</dt><dd>{fmtPrice(price, precision)}</dd></div>
+        <div><dt>ATR {ATR_LENGTH} · {tf}</dt><dd>{a ? fmtPrice(a, precision) : '—'}</dd></div>
       </dl>
       {error && !bars && <p className="hint">Non riesco a leggere il prezzo. Riprovo tra poco.</p>}
 
       <label className="num"><span>Stop {stopIn == null ? `(${comma(STOP_ATR)} × ATR dal prezzo)` : '(modificato)'}</span>
-        <input type="text" inputMode="decimal" value={stopIn ?? (suggested ? priceInput(suggested) : '')} onChange={e => setStopIn(e.target.value)} />
+        <input type="text" inputMode="decimal" value={stopIn ?? (suggested ? priceInput(suggested, precision) : '')} onChange={e => setStopIn(e.target.value)} />
       </label>
       {stopIn != null && suggested && <button className="legal-link risk__reset" onClick={() => setStopIn(null)}>Torna a {comma(STOP_ATR)} × ATR</button>}
 
       {out?.error ? <p className="hint risk__warn">{out.error}</p> : out ? (
         <dl className="risk__out">
-          <div><dt>Distanza dello stop</dt><dd>{fmtPrice(out.dist)} <small>{pct(out.distPct)}</small></dd></div>
+          <div><dt>Distanza dello stop</dt><dd>{fmtPrice(out.dist, precision)} <small>{pct(out.distPct)}</small></dd></div>
           <div><dt>Perdita massima</dt><dd className="t-ob">{money(out.loss)} <small>USDT</small></dd></div>
           <div><dt>Dimensione della posizione</dt><dd>{qty(out.size)} <small>{name}</small></dd></div>
           <div><dt>Valore nozionale</dt><dd>{money(out.notional)} <small>USDT</small></dd></div>

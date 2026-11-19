@@ -91,6 +91,7 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
               <span><i className="key key--sig" />Zona di attenzione</span>
             </p>
             <p><b>L'EMA {EMA_LENGTH}</b> è la media del prezzo delle ultime {EMA_LENGTH} candele, che dà più peso alle più recenti. Indica la direzione di fondo: prezzo sopra la media <span className="trend is-up">▲ Trend rialzista</span>, sotto <span className="trend is-down">▼ Trend ribassista</span>. Il badge accanto a ogni titolo usa il {MAIN_TREND_TF}; nel dettaglio ogni timeframe ha il suo triangolo.</p>
+            <p>Nei grafici del dettaglio <b className="tone is-aligned">la linea oro è l'EMA {EMA_LENGTH}</b>: prezzo sopra = trend rialzista, sotto = ribassista.</p>
             <p>Insieme allo Stoch RSI dà quattro letture:</p>
             <ul className="legend__cases">
               <li><b className="tone is-aligned">Ipervenduto in trend rialzista</b> il prezzo è sceso in fretta, ma resta sopra la media di fondo.</li>

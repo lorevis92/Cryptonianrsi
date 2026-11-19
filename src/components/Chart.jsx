@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart, CandlestickSeries, LineSeries, CrosshairMode, LineStyle } from 'lightweight-charts'
+import { priceDecimals } from '../lib/format.js'
 
 const TZ = -new Date().getTimezoneOffset() * 60
 const toTime = t => Math.floor(t / 1000) + TZ
@@ -38,7 +39,7 @@ const DOUBLE_TAP = 320
 // quindi ogni candela sta esattamente sopra il suo valore di K e D.
 // fill: occupa tutta l'altezza del contenitore (grafico a tutto schermo).
 // alwaysActive: niente tocco per attivarlo, perché lì non c'è una pagina da scorrere.
-export default function Chart({ bars, k, d, upper, lower, tall, fill = false, alwaysActive = false }) {
+export default function Chart({ bars, k, d, upper, lower, tall, ema = null, precision = null, fill = false, alwaysActive = false }) {
   const box = useRef(), host = useRef(), api = useRef({})
   const [touched, setActive] = useState(false)
   const active = alwaysActive || touched
@@ -46,6 +47,11 @@ export default function Chart({ bars, k, d, upper, lower, tall, fill = false, al
 
   useEffect(() => {
     const chart = createChart(host.current, { ...options, ...gestures(false) })
+    // EMA 200 aggiunta prima delle candele: resta dietro e non le copre
+    const emaLine = chart.addSeries(LineSeries, {
+      color: 'rgba(235,211,154,0.7)', lineWidth: 1, priceLineVisible: false, lastValueVisible: true,
+      crosshairMarkerVisible: false, title: '',
+    }, 0)
     const candles = chart.addSeries(CandlestickSeries, {
       upColor: '#19E6D0', downColor: '#FF4F7B', borderVisible: false,
       wickUpColor: 'rgba(25,230,208,0.7)', wickDownColor: 'rgba(255,79,123,0.7)',
@@ -53,7 +59,7 @@ export default function Chart({ bars, k, d, upper, lower, tall, fill = false, al
     const fixed = () => ({ priceRange: { minValue: 0, maxValue: 100 } })
     const dLine = chart.addSeries(LineSeries, { color: '#EBD39A', lineWidth: 1, priceLineVisible: false, lastValueVisible: false, autoscaleInfoProvider: fixed, crosshairMarkerVisible: false }, 1)
     const kLine = chart.addSeries(LineSeries, { color: '#19E6D0', lineWidth: 2, priceLineVisible: false, autoscaleInfoProvider: fixed }, 1)
-    const a = (api.current = { chart, candles, kLine, dLine, lines: [], fitted: false, n: 0, userAt: 0 })
+    const a = (api.current = { chart, candles, emaLine, kLine, dLine, lines: [], fitted: false, n: 0, userAt: 0 })
 
     // Scala automatica del tempo: le ultime VISIBLE_BARS candele
     a.fitTime = () => { if (a.n) chart.timeScale().setVisibleLogicalRange({ from: a.n - VISIBLE_BARS, to: a.n + 2 }) }
@@ -140,12 +146,25 @@ export default function Chart({ bars, k, d, upper, lower, tall, fill = false, al
     const line = arr => bars.map((b, i) => (arr?.[i] == null ? { time: toTime(b.t) } : { time: toTime(b.t), value: arr[i] }))
     a.kLine.setData(line(k))
     a.dLine.setData(line(d))
+    // EMA 200 dal server (stessi valori del semaforo); niente linea se lo storico non basta
+    a.emaLine.setData(ema?.length === bars.length ? line(ema) : [])
     a.n = bars.length
     if (!a.fitted) {
       a.fitTime()
       a.fitted = true
     }
-  }, [bars, k, d])
+  }, [bars, k, d, ema])
+
+  // Decimali del prezzo (tick size del simbolo su Bitunix, o in base al prezzo)
+  const last = bars?.length ? bars[bars.length - 1].c : null
+  const dec = priceDecimals(last, precision)
+  useEffect(() => {
+    const a = api.current
+    if (!a.candles) return
+    const priceFormat = { type: 'price', precision: dec, minMove: Number((10 ** -dec).toFixed(dec)) }
+    a.candles.applyOptions({ priceFormat })
+    a.emaLine.applyOptions({ priceFormat })
+  }, [dec])
 
   // Attivo / inattivo
   useEffect(() => {

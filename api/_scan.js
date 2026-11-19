@@ -1,6 +1,6 @@
 import { klines, klinesBack, topSymbols } from './_bitunix.js'
 import { stochRsi, DEFAULTS } from '../src/lib/stochrsi.js'
-import { ema, EMA_LENGTH, EMA_HISTORY } from '../src/lib/trend.js'
+import { ema, emaSeries, EMA_LENGTH, EMA_HISTORY } from '../src/lib/trend.js'
 import { redis, hasStore } from './_store.js'
 
 // Scansione di un timeframe: per ogni titolo una sola richiesta a Bitunix (200 candele)
@@ -73,19 +73,35 @@ function saveSeeds(tf) {
   redis('SET', 'ema:' + tf, JSON.stringify(Object.fromEntries(seeds[tf]))).catch(() => null)
 }
 
-async function trendOf(s, tf, bars, m) {
-  const last = bars[bars.length - 1]
-  let seed = m.get(s)
-  if (seed?.short && Date.now() - seed.short < SHORT_RETRY) return 0
-  let r = seed && !seed.short ? ema(bars, seed) : null
-  if (!r || !bars.some(b => b.t === seed?.t)) {
-    // Seme assente o troppo vecchio: storico lungo (se le 200 candele non sono già tutto lo storico)
+// EMA 200 di un titolo sulle sue candele più recenti: { value (candela in corso), seed } o null se lo storico non basta.
+async function emaOf(s, tf, bars, m) {
+  const seed = m.get(s)
+  if (seed?.short && Date.now() - seed.short < SHORT_RETRY) return null
+  let r = seed && !seed.short && bars.some(b => b.t === seed.t) ? ema(bars, seed) : null
+  if (!r) {
+    // Seme assente o troppo vecchio: storico lungo (se le candele non sono già tutto lo storico)
     const hist = bars.length < 200 ? bars : await klinesBack(s, tf, EMA_HISTORY).catch(() => bars)
     r = ema(hist.length >= bars.length ? hist : bars)
   }
-  if (!r) { m.set(s, { short: Date.now() }); return 0 }
+  if (!r) { m.set(s, { short: Date.now() }); return null }
   m.set(s, r.seed)
-  return last.c > r.value ? 1 : last.c < r.value ? -1 : 0
+  return r
+}
+
+async function trendOf(s, tf, bars, m) {
+  const r = await emaOf(s, tf, bars, m)
+  if (!r) return 0
+  const c = bars[bars.length - 1].c
+  return c > r.value ? 1 : c < r.value ? -1 : 0
+}
+
+// Per il grafico del dettaglio: lo stesso seme del semaforo, esteso a tutte le candele (null = storico insufficiente)
+export async function emaLine(s, tf, bars) {
+  if (bars.length < EMA_LENGTH + 1 && bars.length < 200) return null
+  const m = await seedsFor(tf)
+  const r = await emaOf(s, tf, bars, m).catch(() => null)
+  saveSeeds(tf)
+  return r ? emaSeries(bars, r.seed) : null
 }
 
 export async function run(tf, symbols, p) {

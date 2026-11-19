@@ -40,6 +40,20 @@ export function combined(side, t) {
     : { tone: 'strong', text: 'Forte spinta rialzista · ipercomprato' }
 }
 
+// Serie completa dell'EMA sulle candele del grafico, a partire dal seme calcolato sul server
+// (valore alla chiusura della candela seed.t): in avanti con la formula, all'indietro invertendola.
+// Così la linea del grafico ha esattamente gli stessi valori del semaforo.
+export function emaSeries(bars, seed, n = EMA_LENGTH) {
+  const i = seed ? bars.findIndex(b => b.t === seed.t) : -1
+  if (i < 0) return null
+  const a = 2 / (n + 1)
+  const out = new Array(bars.length)
+  out[i] = seed.v
+  for (let j = i + 1; j < bars.length; j++) out[j] = out[j - 1] + a * (bars[j].c - out[j - 1])
+  for (let j = i; j > 0; j--) out[j - 1] = (out[j] - a * bars[j].c) / (1 - a)
+  return out
+}
+
 // EMA sulle chiusure. seed = { t, v }: valore già calcolato alla chiusura della candela t,
 // così ogni aggiornamento riparte da lì invece di riscaricare lo storico.
 // Restituisce { value (con la candela in corso), seed (ultima candela chiusa) } o null se lo storico non basta.

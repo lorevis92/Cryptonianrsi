@@ -19,7 +19,7 @@ export function useCandles(symbol, tf, enabled) {
         const r = await fetch(`/api/klines?symbol=${symbol}&interval=${tf}&limit=300`)
         const j = await r.json()
         if (!r.ok) throw new Error(j.error || 'Dati non disponibili')
-        if (alive) setState({ bars: j.bars, error: null, loading: false })
+        if (alive) setState({ bars: j.bars, ema: j.ema || null, precision: Number.isInteger(j.precision) ? j.precision : null, error: null, loading: false })
       } catch (e) {
         if (alive) setState(s => ({ ...s, error: e.message, loading: false }))
       }

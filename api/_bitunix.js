@@ -61,7 +61,18 @@ export async function tradingPairs() {
   const data = await getJson('/api/v1/futures/market/trading_pairs')
   return (Array.isArray(data) ? data : [])
     .filter(p => !p.symbolStatus || p.symbolStatus === 'OPEN')
-    .map(p => ({ symbol: p.symbol, base: p.base || p.baseCoin || p.symbol.replace(/USDT$/, '') }))
+    .map(p => ({ symbol: p.symbol, base: p.base || p.baseCoin || p.symbol.replace(/USDT$/, ''), pp: Number.isInteger(+p.quotePrecision) ? +p.quotePrecision : null }))
+}
+
+// Decimali del prezzo di un simbolo (quotePrecision di Bitunix = tick size). Elenco tenuto 1 ora per istanza.
+let precs = { at: 0, map: new Map(), job: null }
+export async function pricePrecision(symbol) {
+  if (Date.now() - precs.at > 3600e3 || !precs.map.size) {
+    precs.job ||= tradingPairs().then(list => { precs = { at: Date.now(), map: new Map(list.map(p => [p.symbol, p.pp])), job: null } })
+      .catch(() => { precs.job = null })
+    await precs.job
+  }
+  return precs.map.get(symbol) ?? null
 }
 
 // Volume delle ultime 24 ore (in USDT) per ogni coppia, dai ticker. Una richiesta, tenuta 1 minuto per istanza.

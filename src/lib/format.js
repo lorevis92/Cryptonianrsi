@@ -1,8 +1,15 @@
 export const fmtK = v => (v == null ? '—' : v < 10 ? v.toFixed(1) : Math.round(v).toString())
-export function fmtPrice(v) {
+// Decimali del prezzo: quelli del tick size di Bitunix se li conosciamo, altrimenti in base al prezzo
+// (almeno 4 cifre significative: 63000 → 2, 73,5 → 3, 1,23 → 4, 0,0037543 → 7).
+export function priceDecimals(v, precision = null) {
+  if (Number.isInteger(precision) && precision >= 0) return Math.min(precision, 12)
+  if (!Number.isFinite(v) || v === 0) return 2
+  return Math.min(12, Math.max(2, 4 - Math.floor(Math.log10(Math.abs(v)))))
+}
+export function fmtPrice(v, precision = null) {
   if (v == null || !Number.isFinite(v)) return '—'
-  const d = v >= 1000 ? 2 : v >= 1 ? 3 : v >= 0.01 ? 5 : 8
-  return v.toLocaleString('it-CH', { minimumFractionDigits: Math.min(d, 2), maximumFractionDigits: d })
+  const d = priceDecimals(v, precision)
+  return v.toLocaleString('it-CH', { minimumFractionDigits: d, maximumFractionDigits: d })
 }
 export const ZONE_LABEL = { oversold: 'Ipervenduto', overbought: 'Ipercomprato', neutral: 'Neutro' }
 

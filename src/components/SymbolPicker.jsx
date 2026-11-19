@@ -21,14 +21,10 @@ function loadPairs() {
   return cache.job
 }
 
-// Ricerca su tutte le coppie di Bitunix, dalle più scambiate nelle ultime 24 ore.
-// Senza testo: preferiti, poi i più scambiati. Scrivendo: corrispondenza esatta, poi "inizia con", poi le altre.
-export default function SymbolPicker({ current, favorites, onToggleFavorite, onPick }) {
+// Elenco delle coppie, aggiornato ogni 5 minuti mentre il componente è aperto. Restituisce [pairs, error].
+export function usePairs() {
   const [pairs, setPairs] = useState(cache.pairs)
   const [error, setError] = useState(null)
-  const [q, setQ] = useState('')
-  const term = useDeferredValue(q.trim().toUpperCase())
-
   useEffect(() => {
     let alive = true
     const refresh = () => loadPairs().then(p => { if (alive) { setPairs(p); setError(null) } }).catch(e => { if (alive) setError(e.message) })
@@ -36,20 +32,33 @@ export default function SymbolPicker({ current, favorites, onToggleFavorite, onP
     const t = setInterval(refresh, REFRESH)
     return () => { alive = false; clearInterval(t) }
   }, [])
+  return [pairs, error]
+}
+
+// Corrispondenza esatta, poi "inizia con", poi le altre; dentro ogni gruppo per volume.
+export function matchPairs(src, term, max = 60) {
+  const exact = [], starts = [], rest = []
+  for (const p of src) { // già in ordine di volume, quindi ogni gruppo resta ordinato per volume
+    if (p.base === term || p.symbol === term) exact.push(p)
+    else if (p.base.startsWith(term) || p.symbol.startsWith(term)) starts.push(p)
+    else if (p.symbol.includes(term)) rest.push(p)
+  }
+  return [...exact, ...starts, ...rest].slice(0, max)
+}
+
+// Ricerca su tutte le coppie di Bitunix, dalle più scambiate nelle ultime 24 ore.
+// Senza testo: preferiti, poi i più scambiati. Scrivendo: corrispondenza esatta, poi "inizia con", poi le altre.
+export default function SymbolPicker({ current, favorites, onToggleFavorite, onPick }) {
+  const [pairs, error] = usePairs()
+  const [q, setQ] = useState('')
+  const term = useDeferredValue(q.trim().toUpperCase())
 
   const bySymbol = useMemo(() => new Map((pairs || []).map(p => [p.symbol, p])), [pairs])
   const info = s => bySymbol.get(s) || { symbol: s, base: s.replace(/USDT$/, ''), vol: 0 }
 
   const found = useMemo(() => {
     if (!term) return []
-    const src = pairs || favorites.map(info)
-    const exact = [], starts = [], rest = []
-    for (const p of src) { // già in ordine di volume, quindi ogni gruppo resta ordinato per volume
-      if (p.base === term || p.symbol === term) exact.push(p)
-      else if (p.base.startsWith(term) || p.symbol.startsWith(term)) starts.push(p)
-      else if (p.symbol.includes(term)) rest.push(p)
-    }
-    return [...exact, ...starts, ...rest].slice(0, 60)
+    return matchPairs(pairs || favorites.map(info), term)
   }, [pairs, favorites, term]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const top = useMemo(() => (pairs || []).filter(p => !favorites.includes(p.symbol)).slice(0, TOP_SHOWN), [pairs, favorites])

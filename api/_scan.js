@@ -35,7 +35,7 @@ async function pool(items, n, fn) {
   return out
 }
 
-async function run(tf, symbols, p) {
+export async function run(tf, symbols, p) {
   const list = symbols || await topSymbols(TOP)
   const rows = await pool(list, CONCURRENCY, async s => {
     const bars = await klines(s, tf, 200)

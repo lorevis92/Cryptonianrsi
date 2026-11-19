@@ -26,7 +26,7 @@ function localApi() {
             setHeader: (k, v) => res.setHeader(k, v),
             json(d) { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(d)) },
           }
-          await mod.default({ method: req.method, query, body }, wrap)
+          await mod.default({ method: req.method, query, body, headers: req.headers }, wrap)
         } catch (e) {
           res.statusCode = 500
           res.end(JSON.stringify({ error: e.message }))

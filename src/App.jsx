@@ -6,7 +6,7 @@ import TimeframeCard from './components/TimeframeCard.jsx'
 import SymbolPicker from './components/SymbolPicker.jsx'
 import PlanPanel from './components/PlanPanel.jsx'
 import IndicatorPanel from './components/IndicatorPanel.jsx'
-import AlertsPanel from './components/AlertsPanel.jsx'
+import NotifyPanel from './components/NotifyPanel.jsx'
 import CardBoundary from './components/CardBoundary.jsx'
 import BubbleMap from './components/BubbleMap.jsx'
 import { useFavorites } from './lib/favorites.js'
@@ -16,9 +16,8 @@ import { bubbleData } from './lib/bubbleDraw.js'
 import { TIMEFRAMES, planById } from './lib/plans.js'
 import { DEFAULTS } from './lib/stochrsi.js'
 import { load, save } from './lib/storage.js'
-import { runAlerts } from './alerts/index.js'
 
-const MENU = [['plan', 'Il tuo piano'], ['indicator', 'Indicatore'], ['alerts', 'Avvisi']]
+const MENU = [['plan', 'Il tuo piano'], ['indicator', 'Indicatore'], ['notify', 'Notifiche']]
 
 export default function App() {
   const [symbol, setSymbol] = useState(() => load('symbol', 'BTCUSDT'))
@@ -54,6 +53,14 @@ export default function App() {
     else setView('map')
   }, [])
 
+  // Link dagli avvisi Telegram (/?s=BTCUSDT): apre subito il dettaglio del titolo; Indietro porta alla mappa.
+  useEffect(() => {
+    const s = new URLSearchParams(location.search).get('s')?.toUpperCase()
+    if (!s) return
+    history.replaceState(null, '', location.pathname + location.hash)
+    if (/^[A-Z0-9]{2,24}$/.test(s)) openSymbol(s)
+  }, [openSymbol])
+
   useEffect(() => save('symbol', symbol), [symbol])
   useEffect(() => save('plan', plan), [plan])
   useEffect(() => save('params', params), [params])
@@ -63,7 +70,6 @@ export default function App() {
     const el = view === 'detail' && chips.current?.querySelector('.chip.is-on')
     if (el) chips.current.scrollTo({ left: el.offsetLeft - chips.current.clientWidth / 2 + el.clientWidth / 2, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
   }, [symbol, favorites, view])
-  useEffect(() => { runAlerts(symbol, states, load('alertPrefs', null)) }, [symbol, states])
 
   const unlocked = planById(plan).timeframes
   const isFav = favorites.includes(symbol)
@@ -84,7 +90,7 @@ export default function App() {
   }, [symbol, states, lockedTails, unlocked, params])
   const bubbleToMap = useCallback(() => { setHighlight(symbol); backToMap() }, [symbol, backToMap])
 
-  const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', alerts: 'Avvisi' }
+  const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', notify: 'Notifiche' }
 
   return (
     <div className={'app is-' + view}>
@@ -155,7 +161,7 @@ export default function App() {
         )}
         {sheet === 'plan' && <PlanPanel plan={plan} onChange={setPlan} />}
         {sheet === 'indicator' && <IndicatorPanel params={params} onChange={setParams} />}
-        {sheet === 'alerts' && <AlertsPanel plan={plan} />}
+        {sheet === 'notify' && <NotifyPanel plan={plan} onUpgrade={() => setSheet('plan')} />}
       </Sheet>
     </div>
   )

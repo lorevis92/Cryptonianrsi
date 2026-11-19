@@ -388,3 +388,44 @@ p { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Calcolatore del rischio ---------- */
+.confluence__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.confluence__foot .formula { margin-top: 0; }
+.risk-btn { height: 30px; padding: 0 12px; border: 1px solid var(--hair); border-radius: 999px; font-size: 12.5px; color: var(--gold); transition: border-color .2s, color .2s; }
+.risk-btn:hover { border-color: var(--gold-line); color: var(--gold-light); }
+.risk { display: grid; gap: 14px; }
+.risk > .hint { margin-top: -6px; }
+.risk .risk__warn { color: var(--short); }
+.risk__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.risk__tf { display: inline-flex; align-items: center; gap: 8px; }
+.risk__tf select { height: 34px; padding: 0 10px; background: var(--graphite-2); border: 1px solid var(--hair); border-radius: var(--r-ctl); color: var(--gold-light); font: inherit; font-size: 14px; }
+.risk__facts, .risk__out { margin: 0; display: grid; }
+.risk__facts { grid-template-columns: 1fr 1fr; gap: 12px; }
+.risk__facts div { min-width: 0; padding: 10px 12px; border: 1px solid var(--hair); border-radius: var(--r-ctl); background: var(--graphite-2); }
+.risk__facts dt, .risk__out dt { font-size: 12.5px; color: var(--muted); }
+.risk__facts dd, .risk__out dd { margin: 0; font-family: var(--serif); font-size: 18px; color: var(--gold-light); font-variant-numeric: lining-nums tabular-nums; }
+.risk__out dd small { font-family: var(--sans); font-size: 12px; color: var(--muted); }
+.risk__out div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.risk__out dd { text-align: right; white-space: nowrap; }
+.risk__out dd.t-ob, .risk__out .is-warn dd, .risk__out .is-warn dt { color: var(--short); }
+.risk__reset { justify-self: start; margin-top: -6px; }
+.risk__lesson { font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--ivory); }
+
+/* ---------- Note legali ---------- */
+.legal-line { padding: 6px 20px calc(8px + env(safe-area-inset-bottom)); font-size: 11.5px; color: var(--muted-2); text-align: center; }
+.legal-link { font-size: inherit; color: var(--gold); text-decoration: underline; text-decoration-color: var(--gold-line); text-underline-offset: 3px; }
+.layout__legal { grid-column: 1 / -1; margin-top: 28px; }
+.layout__legal .legal-line { padding: 0; }
+.legal { display: grid; gap: 16px; font-size: 14px; color: var(--muted); }
+.legal section { display: grid; gap: 6px; }
+.legal__lead { color: var(--ivory); }
+.legal__title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 17px; color: var(--gold-light); }
+.gate { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgba(6, 7, 11, .92); animation: fade .3s both; }
+.gate__panel { width: 100%; max-width: 420px; display: grid; gap: 16px; padding: 28px 24px; border: 1px solid var(--gold-line); border-radius: var(--r-card); background: var(--graphite); text-align: center; }
+.gate__brand { font-size: 20px; }
+.gate__title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 24px; color: var(--gold-light); }
+.gate__text { color: var(--ivory); font-size: 15px; }
+.gate__ok { width: 100%; }
+.gate .legal-link { justify-self: center; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .gate { animation: none; } }

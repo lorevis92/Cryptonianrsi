@@ -7,6 +7,9 @@ import SymbolPicker from './components/SymbolPicker.jsx'
 import PlanPanel from './components/PlanPanel.jsx'
 import IndicatorPanel from './components/IndicatorPanel.jsx'
 import NotifyPanel from './components/NotifyPanel.jsx'
+import RiskPanel from './components/RiskPanel.jsx'
+import { DisclaimerGate, LegalLine, LegalPanel } from './components/Legal.jsx'
+import { DISCLAIMER_VERSION } from './lib/legal.js'
 import CardBoundary from './components/CardBoundary.jsx'
 import BubbleMap from './components/BubbleMap.jsx'
 import { useFavorites } from './lib/favorites.js'
@@ -17,7 +20,7 @@ import { TIMEFRAMES, planById } from './lib/plans.js'
 import { DEFAULTS } from './lib/stochrsi.js'
 import { load, save } from './lib/storage.js'
 
-const MENU = [['plan', 'Il tuo piano'], ['indicator', 'Indicatore'], ['notify', 'Notifiche']]
+const MENU = [['plan', 'Il tuo piano'], ['indicator', 'Indicatore'], ['notify', 'Notifiche'], ['legal', 'Note legali']]
 
 export default function App() {
   const [symbol, setSymbol] = useState(() => load('symbol', 'BTCUSDT'))
@@ -26,6 +29,9 @@ export default function App() {
   const [states, setStates] = useState({})
   const [sheet, setSheet] = useState(null)
   const [favorites, toggleFavorite] = useFavorites()
+  // Avvertenza del primo avvio, da accettare una volta
+  const [accepted, setAccepted] = useState(() => load('disclaimer', 0) >= DISCLAIMER_VERSION)
+  const accept = () => { save('disclaimer', DISCLAIMER_VERSION); setAccepted(true) }
   const chips = useRef()
   // La mappa a bolle è la pagina iniziale; il dettaglio di un titolo ci sta sopra nella cronologia,
   // così anche il tasto Indietro del telefono riporta alla mappa.
@@ -90,7 +96,7 @@ export default function App() {
   }, [symbol, states, lockedTails, unlocked, params])
   const bubbleToMap = useCallback(() => { setHighlight(symbol); backToMap() }, [symbol, backToMap])
 
-  const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', notify: 'Notifiche' }
+  const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', notify: 'Notifiche', legal: 'Note legali', risk: 'Calcola il rischio' }
 
   return (
     <div className={'app is-' + view}>
@@ -136,11 +142,12 @@ export default function App() {
       </div>
 
       {view === 'map' ? (
-        <BubbleMap favorites={favorites} params={params} onOpen={openSymbol} highlight={highlight} onClearHighlight={() => setHighlight(null)} />
+        <BubbleMap favorites={favorites} params={params} onOpen={openSymbol} highlight={highlight} onClearHighlight={() => setHighlight(null)}
+          footer={<LegalLine onOpen={() => setSheet('legal')} />} />
       ) : (
         <main className="layout">
           <aside className="layout__side">
-            <Confluence states={states} unlocked={unlocked} params={params} onLocked={openPlans} bubble={bubble} onBubble={bubbleToMap} />
+            <Confluence states={states} unlocked={unlocked} params={params} onLocked={openPlans} bubble={bubble} onBubble={bubbleToMap} onRisk={() => setSheet('risk')} />
           </aside>
           <div className="layout__cards">
             {TIMEFRAMES.map(tf => (
@@ -149,6 +156,7 @@ export default function App() {
               </CardBoundary>
             ))}
           </div>
+          <div className="layout__legal"><LegalLine onOpen={() => setSheet('legal')} /></div>
         </main>
       )}
 
@@ -162,7 +170,10 @@ export default function App() {
         {sheet === 'plan' && <PlanPanel plan={plan} onChange={setPlan} />}
         {sheet === 'indicator' && <IndicatorPanel params={params} onChange={setParams} />}
         {sheet === 'notify' && <NotifyPanel plan={plan} onUpgrade={() => setSheet('plan')} />}
+        {sheet === 'legal' && <LegalPanel />}
+        {sheet === 'risk' && <RiskPanel symbol={symbol} />}
       </Sheet>
+      {!accepted && sheet !== 'legal' && <DisclaimerGate onAccept={accept} onRead={() => setSheet('legal')} />}
     </div>
   )
 }

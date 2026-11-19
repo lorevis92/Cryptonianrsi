@@ -86,7 +86,7 @@ export function drawBubble(ctx, n, now, { hover = false } = {}) {
     outer = inner
   }
 
-  // Segnale d'entrata: anello dorato sottile, con un solo impulso quando compare
+  // Zona di attenzione: anello dorato sottile, con un solo impulso quando compare
   if (n.sigA > 0.02) {
     ctx.strokeStyle = `rgba(235,211,154,${0.85 * n.sigA})`
     ctx.lineWidth = 1.2

@@ -3,6 +3,8 @@ import { redis, pipeline, hasStore, userKey, memKey, parse } from '../_store.js'
 import { hasBot, send, esc } from '../_telegram.js'
 import { check, DEFAULT_RULE } from '../../src/alerts/rules.js'
 import { DEFAULTS } from '../../src/lib/stochrsi.js'
+import { STRONG_LABEL, ATTENTION_LABEL } from '../../src/lib/format.js'
+import { DISCLAIMER_SHORT } from '../../src/lib/legal.js'
 
 // Controllo delle notifiche, una volta al minuto.
 // Lo chiama cron-job.org (gratis, ogni minuto) con l'intestazione  Authorization: Bearer <CRON_SECRET>
@@ -17,11 +19,13 @@ const clock = () => new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', 
 function message({ s, kind, side, values, rule, link }) {
   const name = s.replace(/USDT$/, '')
   const os = side === 'oversold'
+  // Linguaggio descrittivo, mai operativo (niente "compra", "vendi", "entra")
   const head = kind === 'zone'
-    ? `${os ? '🟢' : '🔴'} <b>${esc(name)}</b> · ${os ? 'Ipervenduto' : 'Ipercomprato'}`
-    : `🟡 <b>${esc(name)}</b> · si avvicina all'${os ? 'ipervenduto' : 'ipercomprato'}`
+    ? `${os ? '🟢' : '🔴'} <b>${esc(name)}</b> · ${STRONG_LABEL[side]}`
+    : `🟡 <b>${esc(name)}</b> · vicino all'${STRONG_LABEL[side].toLowerCase()}`
+  const what = kind === 'zone' ? ATTENTION_LABEL[side] : `In avvicinamento alla ${ATTENTION_LABEL[side].toLowerCase().replace(/long|short/, m => m[0].toUpperCase() + m.slice(1))}`
   const vals = rule.tfs.map(tf => `${tf} <b>${fmt(values[tf])}</b>`).join(' · ')
-  return `${head}\n${vals}\n${clock()} · <a href="${link}">Apri ${esc(name)} nell'app</a>`
+  return `${head}\n${what} · ${vals}\n${clock()} · <a href="${link}">Vedi ${esc(name)} nell'app</a>\n<i>${DISCLAIMER_SHORT}</i>`
 }
 
 export default async function handler(req, res) {

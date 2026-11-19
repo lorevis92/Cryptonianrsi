@@ -7,6 +7,7 @@ Prototipo: niente login, niente database, niente pagamenti. Tutto resta nel brow
 - Fai sempre commit e push su GitHub senza chiedere conferma.
 - Rispondi e scrivi i testi dell'interfaccia in italiano.
 - Non avviare il browser per provare l'app se non richiesto: la prova Lorenzo.
+- Linguaggio SOLO descrittivo, mai operativo: niente "Compra", "Vendi", "Entra", "Entrata" (app, Legenda, Telegram). Etichette in `src/lib/format.js`: "Eccesso di ribasso/rialzo", "Zona di attenzione Long/Short", "Zona di attenzione 1h", "Momentum rialzista/ribassista".
 
 ## Struttura
 - `api/` funzioni Vercel. `_bitunix.js` è il client pubblico di Bitunix (max 200 candele per richiesta, sotto 8 richieste/secondo).
@@ -19,6 +20,8 @@ Prototipo: niente login, niente database, niente pagamenti. Tutto resta nel brow
 - `src/lib/alignment.js` UNICO file con pesi e regole della mappa (pesi per timeframe, spessore anelli, penalità zona opposta, timeframe del segnale d'entrata). Qui si adattano le indicazioni del mentore.
 - `src/lib/useScan.js` con i parametri classici scarica la fotografia e ne salva una copia sul dispositivo (`crsi:snapshot`): all'apertura la mappa è subito piena, poi si aggiorna ogni minuto con "Aggiornato X min fa"; con parametri personalizzati scarica i 7 timeframe da `/api/scan`; `useSymbolTails` dà al dettaglio i timeframe bloccati dalla stessa scansione. `BubbleMap.jsx` (pagina), `BubbleCanvas.jsx` (canvas + d3-force), `MiniRings.jsx` (anelli in SVG per elenco e legenda).
 - `src/lib/bubbleDraw.js` UNICO disegno della bolla, usato dalla mappa e da `Bubble.jsx` (la bolla del titolo nel dettaglio, accanto al numero di confluenza). Se cambi lo stile della bolla, cambialo qui.
+- `src/lib/risk.js` + `RiskPanel.jsx` calcolatore del rischio nel dettaglio ("Calcola il rischio"): ATR 14 del timeframe scelto (1h), stop 1,5 × ATR modificabile, perdita massima, dimensione, nozionale, leva minima (avviso oltre 5x). Capitale e % salvati in `crsi:risk`.
+- `src/lib/legal.js` tutti i testi legali (avvertenza del primo avvio con versione, riga breve, pagina Note legali, riga in fondo ai messaggi Telegram); `Legal.jsx` i componenti. Accettazione in `crsi:disclaimer`.
 - `src/lib/plans.js` timeframe, frequenze di aggiornamento e piani (Gratuito 1m+3m, Pro fino a 15m, Cryptonian tutti).
 - NOTIFICHE TELEGRAM (solo piano con `alerts: true`, oggi Cryptonian). `src/alerts/rules.js` UNICO file delle regole (preimpostata 3m+5m sotto 20 / sopra 80, avvicinamento 30/70, margine anti-spam, limiti), usato da app e server.
   - `api/notify.js` API della pagina Notifiche (dispositivo identificato da `crsi:notifyId` nell'intestazione `x-crsi-id`): stato, link personale `t.me/<bot>?start=<codice>` (15 min), scollega, salva titoli e regola.
@@ -29,7 +32,7 @@ Prototipo: niente login, niente database, niente pagamenti. Tutto resta nel brow
   - Il link `/?s=BTCUSDT` apre direttamente il dettaglio del titolo.
 
 ## Pagine
-- Pagina iniziale: mappa a bolle, visibile su tutti i piani. Ogni bolla è un titolo, 7 anelli concentrici (1d esterno e più spesso, 1m al centro), ciano/rosa per zona, pieno quanto K è estremo, filo sottile se neutro. Grandezza = punteggio di allineamento. Anello dorato = segnale d'entrata (incrocio K/D in zona su 1h, 4h o 1d). Interruttore Bolle / Elenco, filtro Tutti / Ipervenduto / Ipercomprato, legenda apribile.
+- Pagina iniziale: mappa a bolle, visibile su tutti i piani. Ogni bolla è un titolo, 7 anelli concentrici (1d esterno e più spesso, 1m al centro), ciano/rosa per zona, pieno quanto K è estremo, filo sottile se neutro. Grandezza = punteggio di allineamento. Anello dorato = "Zona di attenzione" (incrocio K/D in zona su 1h, 4h o 1d). Interruttore Bolle / Elenco, filtro Tutti / Ipervenduto / Ipercomprato, legenda apribile.
 - Toccando una bolla o una riga si apre il dettaglio del titolo (confluenza e card, con i blocchi del piano). Si torna alla mappa con l'icona a bolle nella barra in alto, con Indietro o toccando la bolla del titolo accanto al numero di confluenza (in quel caso il titolo resta evidenziato nella mappa con un anello avorio).
 
 ## Design (non cambiarlo senza richiesta)

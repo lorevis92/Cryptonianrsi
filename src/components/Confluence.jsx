@@ -1,11 +1,11 @@
 import Icon from './Icon.jsx'
 import Bubble from './Bubble.jsx'
 import { TIMEFRAMES, planFor } from '../lib/plans.js'
-import { fmtK, ZONE_LABEL } from '../lib/format.js'
+import { fmtK, ZONE_LABEL, STRONG_LABEL, ATTENTION_LABEL, MOMENTUM_LABEL } from '../lib/format.js'
 
 // Il cuore dell'app: tutti i timeframe sulla stessa scala 0–100.
 // Quando i pallini si mettono in colonna nella stessa zona, c'è confluenza.
-export default function Confluence({ states, unlocked, params, onLocked, bubble, onBubble }) {
+export default function Confluence({ states, unlocked, params, onLocked, bubble, onBubble, onRisk }) {
   const active = TIMEFRAMES.filter(tf => unlocked.includes(tf))
   const ready = active.filter(tf => states[tf]?.K != null)
   const os = ready.filter(tf => states[tf].zone === 'oversold').length
@@ -18,8 +18,10 @@ export default function Confluence({ states, unlocked, params, onLocked, bubble,
   const headline = !ready.length ? 'Sto leggendo i timeframe'
     : count === 0 ? 'Nessun timeframe in zona estrema'
     : `su ${active.length} timeframe in ${side === 'oversold' ? 'ipervenduto' : 'ipercomprato'}`
-  const sub = !ready.length || count === 0 ? `K sopra D in ${kUp} su ${ready.length}`
-    : ratio >= 0.6 ? `Confluenza forte verso il ${side === 'oversold' ? 'long' : 'short'}`
+  // Linguaggio descrittivo: cosa sta facendo l'indicatore, mai cosa fare
+  const momentum = !ready.length ? '' : kUp * 2 > ready.length ? `${MOMENTUM_LABEL.up} · ` : kUp * 2 < ready.length ? `${MOMENTUM_LABEL.down} · ` : ''
+  const sub = !ready.length || count === 0 ? `${momentum}K sopra D in ${kUp} su ${ready.length}`
+    : ratio >= 0.6 ? `${STRONG_LABEL[side]} · ${ATTENTION_LABEL[side]}`
     : 'Confluenza parziale'
 
   // Stesso ordine delle card: 1m in alto, 1d in basso
@@ -62,7 +64,10 @@ export default function Confluence({ states, unlocked, params, onLocked, bubble,
           <span style={{ left: 0 }}>0</span><span style={{ left: 'var(--lo)' }}>{params.lower}</span><span style={{ left: '50%' }}>50</span><span style={{ left: 'var(--hi)' }}>{params.upper}</span><span style={{ left: '100%' }}>100</span>
         </div>
       </div>
-      <p className="formula">StochRSI = (RSI − min) / (max − min)</p>
+      <div className="confluence__foot">
+        <p className="formula">StochRSI = (RSI − min) / (max − min)</p>
+        {onRisk && <button className="risk-btn" onClick={onRisk}>Calcola il rischio</button>}
+      </div>
     </section>
   )
 }

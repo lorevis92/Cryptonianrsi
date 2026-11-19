@@ -6,6 +6,14 @@ export function fmtPrice(v) {
 }
 export const ZONE_LABEL = { oversold: 'Ipervenduto', overbought: 'Ipercomprato', neutral: 'Neutro' }
 
+// Linguaggio descrittivo, mai operativo: niente "compra", "vendi", "entra".
+// Zona forte (molti timeframe allineati, o la regola delle notifiche soddisfatta):
+export const STRONG_LABEL = { oversold: 'Eccesso di ribasso', overbought: 'Eccesso di rialzo' }
+export const ATTENTION_LABEL = { oversold: 'Zona di attenzione Long', overbought: 'Zona di attenzione Short' }
+export const MOMENTUM_LABEL = { up: 'Momentum rialzista', down: 'Momentum ribassista' }
+// Anello dorato (K incrocia D dentro la zona su 1h, 4h o 1d)
+export const signalLabel = tf => `Zona di attenzione ${tf}`
+
 // Volume abbreviato all'italiana: 1,2 Mld · 345 Mln · 12,3 Mln · 980 mila
 export function fmtVol(v) {
   if (!Number.isFinite(v) || v <= 0) return '—'

@@ -21,11 +21,15 @@ export const IN_ZONE_BASE = 0.85
 // Quanto toglie un timeframe nella zona opposta (0 = niente, 1 = annulla il suo peso).
 export const OPPOSITE_PENALTY = 0.5
 
-// Timeframe "grandi" su cui l'incrocio K/D dentro la zona è il segnale d'entrata.
+// Timeframe "grandi" su cui l'incrocio K/D dentro la zona accende l'anello dorato ("Zona di attenzione 1h").
+// È una lettura descrittiva, non un'indicazione a operare.
 export const SIGNAL_TIMEFRAMES = ['1h', '4h', '1d']
 
 // Incrocio valido se avvenuto al massimo così tante candele fa (0 = candela attuale).
 export const SIGNAL_MAX_AGO = 1
+
+// Da questo punteggio (0–1) la zona si descrive come forte: "Eccesso di ribasso" / "Eccesso di rialzo".
+export const STRONG_SCORE = 0.6
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -50,7 +54,7 @@ export function alignment(tails, params) {
   const other = side === 'oversold' ? ob : os
   const score = side === 'neutral' ? 0 : Math.max(0, Math.min(1, (main - OPPOSITE_PENALTY * other) / TOTAL))
 
-  // Segnale d'entrata: K incrocia D dentro la zona, su un timeframe grande, nella direzione giusta.
+  // Zona di attenzione: K incrocia D dentro la zona, su un timeframe grande, nella direzione della zona.
   let signal = null
   for (const tf of [...SIGNAL_TIMEFRAMES].reverse()) {
     const c = states[tf]?.cross

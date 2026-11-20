@@ -1,6 +1,7 @@
 // Timeframe dal più piccolo al più grande e piani di abbonamento.
 // I piani salgono a scalare: ogni piano include i timeframe del precedente.
 // Prototipo: nessun pagamento, si cambia piano liberamente dal menu.
+// Gli id (free, pro, cryptonian) sono interni e salvati nel database: non cambiarli. Si cambiano solo i nomi visibili.
 
 export const TIMEFRAMES = ['1m', '3m', '5m', '15m', '1h', '4h', '1d']
 
@@ -11,8 +12,8 @@ export const REFRESH = { '1m': 15e3, '3m': 30e3, '5m': 30e3, '15m': 60e3, '1h': 
 
 export const PLANS = [
   { id: 'free', name: 'Gratuito', price: '0', timeframes: ['1m', '3m'], note: 'Per conoscere il metodo' },
-  { id: 'pro', name: 'Pro', price: 'In arrivo', timeframes: ['1m', '3m', '5m', '15m'], note: 'Intraday completo' },
-  { id: 'cryptonian', name: 'Cryptonian', price: 'In arrivo', timeframes: TIMEFRAMES, note: 'Tutta la confluenza, avvisi inclusi', alerts: true },
+  { id: 'pro', name: 'Classic', price: 'In arrivo', timeframes: ['1m', '3m', '5m', '15m'], note: 'Intraday completo' },
+  { id: 'cryptonian', name: 'Premium', price: 'In arrivo', timeframes: TIMEFRAMES, note: 'Tutta la confluenza, avvisi inclusi', alerts: true },
 ]
 
 export const planById = id => PLANS.find(p => p.id === id) || PLANS[0]

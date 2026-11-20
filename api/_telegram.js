@@ -11,7 +11,12 @@ export async function tg(method, body = {}) {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
   })
   const j = await r.json().catch(() => ({}))
-  if (!j.ok) { const e = new Error(j.description || `Telegram ${r.status}`); e.code = j.error_code || r.status; throw e }
+  if (!j.ok) {
+    const e = new Error(j.description || `Telegram ${r.status}`)
+    e.code = j.error_code || r.status
+    e.retryAfter = j.parameters?.retry_after || 0 // 429: secondi da aspettare
+    throw e
+  }
   return j.result
 }
 

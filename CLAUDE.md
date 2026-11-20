@@ -1,7 +1,7 @@
 # Cryptonian RSI — regole per Claude Code
 
 App di confluenza dello Stochastic RSI su più timeframe, creata con il Cryptoniano.
-Prototipo: niente login, niente database, niente pagamenti. Tutto resta nel browser (localStorage, prefisso `crsi:`).
+Account con Supabase (Google o link via email), niente pagamenti (piano scelto liberamente, ma lo cambia solo il server). Senza login l'app resta usabile in modalità base (mappa, elenco, dettaglio con il piano Gratuito); piani e notifiche richiedono l'account. In locale (prefisso `crsi:`) resta la copia delle impostazioni.
 
 ## Lavoro
 - Fai sempre commit e push su GitHub senza chiedere conferma.
@@ -26,11 +26,17 @@ Prototipo: niente login, niente database, niente pagamenti. Tutto resta nel brow
 - `src/lib/legal.js` tutti i testi legali (avvertenza del primo avvio con versione, riga breve, pagina Note legali, riga in fondo ai messaggi Telegram); `Legal.jsx` i componenti. Accettazione in `crsi:disclaimer`.
 - `src/lib/plans.js` timeframe, frequenze di aggiornamento e piani (Gratuito 1m+3m, Pro fino a 15m, Cryptonian tutti).
 - NOTIFICHE TELEGRAM (solo piano con `alerts: true`, oggi Cryptonian). `src/alerts/rules.js` UNICO file delle regole (preimpostata 3m+5m sotto 20 / sopra 80, avvicinamento 30/70, margine anti-spam, limiti), usato da app e server.
-  - `api/notify.js` API della pagina Notifiche (dispositivo identificato da `crsi:notifyId` nell'intestazione `x-crsi-id`): stato, link personale `t.me/<bot>?start=<codice>` (15 min), scollega, salva titoli e regola.
-  - `api/telegram.js` webhook del bot (`/start <codice>` collega, `/stop` scollega). Attivazione una tantum: `/api/telegram?setup=<CRON_SECRET>`.
-  - `api/alerts/check.js` controllo ogni minuto, chiamato da cron-job.org con `Authorization: Bearer <CRON_SECRET>`: legge da Bitunix solo i titoli seguiti, un messaggio per ingresso in zona, lucchetto contro i controlli doppi.
-  - `api/_store.js` Upstash Redis via REST (`KV_REST_API_URL`/`KV_REST_API_TOKEN` o `UPSTASH_REDIS_REST_*`); in locale senza variabili usa la memoria. Chiavi: `u:<id>` utente, `m:<id>` memoria anti-spam, `users`, `chat:<chatId>`, `link:<codice>`.
-  - Variabili su Vercel: `TELEGRAM_BOT_TOKEN`, `CRON_SECRET` (+ quelle di Upstash, automatiche). Facoltativa `APP_URL` per i link nei messaggi.
+  - Titoli seguiti e regola stanno su Supabase (`alert_subscriptions`, l'app li scrive direttamente con la RLS). `api/notify.js` (token dell'account): link personale `t.me/<bot>?start=<codice>` (15 min, codice su Upstash) e scollega.
+  - `api/telegram.js` webhook del bot (`/start <codice>` collega la chat all'account, una chat ↔ un account; `/stop` scollega). Attivazione una tantum: `/api/telegram?setup=<CRON_SECRET>`.
+  - `api/alerts/check.js` controllo ogni minuto, CRON DI VERCEL (`vercel.json`, Vercel Pro; Vercel manda `Authorization: Bearer <CRON_SECRET>`): utenti da Supabase (chat collegata + piano con avvisi), legge da Bitunix solo i titoli seguiti, un messaggio per ingresso in zona, lucchetto contro i controlli doppi.
+  - `api/_tgqueue.js` coda dei messaggi Telegram su Upstash (`tgq`), inviati a scaglioni: max 25/s, 1,1 s tra due messaggi alla stessa chat, 429 rimesso in coda, chat bloccate scollegate.
+  - `api/_store.js` Upstash Redis via REST, solo stato veloce: `m:<userId>` memoria anti-spam, `link:<codice>`, `tgq`, `lock:check`; `u:<deviceId>` vecchi collegamenti per dispositivo, letti solo per trasferirli sull'account.
+- ACCOUNT (Supabase, regione Francoforte). Schema e regole in `supabase/migrations/001_account.sql` (da eseguire nel SQL Editor), prova delle regole in `supabase/tests/rls_check.sql`.
+  - Tabelle: `profiles` (nome, foto, piano), `user_settings` (preferiti, calcolatore, indicatore), `alert_subscriptions` (titoli, regola, chat Telegram). RLS su tutte, niente per `anon`, ogni utente solo le proprie righe; UPDATE concesso solo sulle colonne che l'utente può cambiare (piano e chat Telegram solo dal server). Foto nel bucket privato `avatars/<uid>/`.
+  - `src/lib/account.jsx` (contesto `useAccount`): carica Supabase dopo il primo disegno, login Google / link email, sincronizza `favorites`, `risk`, `params` (vedi `onSave`/`applyRemote` in `storage.js`), al primo accesso trasferisce i dati del dispositivo (anche il vecchio Telegram via `/api/account` migrate).
+  - `api/account.js` (token): piano (`PLAN_SELF_SERVICE`, da spegnere con i pagamenti), trasferimento, eliminazione account (foto, stato avvisi, utente: il resto va via a cascata). `api/_supabase.js` service role SOLO lato server; il browser riceve da `/api/config` solo URL e chiave anon/publishable.
+  - Pagine: Area personale (`AccountPanel.jsx`, `AvatarCropper.jsx`: ritaglio quadrato, 384 px WebP), Privacy (`src/lib/privacy.js`).
+  - Variabili su Vercel: quelle di Supabase (integrazione), `TELEGRAM_BOT_TOKEN`, `CRON_SECRET` (+ Upstash). Facoltativa `APP_URL` per i link nei messaggi. Mai chiavi nel codice o nel frontend.
   - Il link `/?s=BTCUSDT` apre direttamente il dettaglio del titolo.
 
 ## Pagine
@@ -47,5 +53,5 @@ Concept: strumento di precisione. Scala graduata incisa in oro, le uniche cose a
 - Ingrandire un grafico: da telefono sale dal basso a tutto schermo (timeframe, K, D, chiudi); da computer la card si allarga a tutta la riga con View Transitions (altrimenti FLIP).
 - I grafici sono inattivi finché non li tocchi: il dito e la rotella scorrono la pagina. Col mouse gli assi (scala) sono sempre attivi; col dito anche gli assi funzionano solo dopo aver attivato il grafico. Attivi = leggera scala e bordo dorato più acceso.
 - Rispetta sempre `prefers-reduced-motion`: niente deriva, niente impulsi, valori subito al loro posto.
-- Il selettore del piano e la pagina Notifiche stanno nel menu, non sempre in vista. I timeframe bloccati si vedono sbiaditi con il lucchetto.
+- Account, selettore del piano, Notifiche, Note legali e Privacy stanno nel menu, non sempre in vista. I timeframe bloccati si vedono sbiaditi con il lucchetto.
 - Prima il telefono; da 980px in su colonna di confluenza fissa a sinistra e card a griglia a destra.

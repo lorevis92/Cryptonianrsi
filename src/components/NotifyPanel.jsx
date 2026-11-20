@@ -1,9 +1,9 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import { usePairs, matchPairs } from './SymbolPicker.jsx'
-import { notifyApi } from '../lib/notify.js'
+import { useAccount } from '../lib/account.jsx'
+import { Login } from './AccountPanel.jsx'
 import { planById, PLANS, TIMEFRAMES } from '../lib/plans.js'
-import { load, save } from '../lib/storage.js'
 import { fmtVol } from '../lib/format.js'
 import { DEFAULT_RULE, APPROACH, MAX_SYMBOLS, MAX_RULE_TFS, RULE_LIMITS, cleanRule, isDefaultRule } from '../alerts/rules.js'
 
@@ -11,10 +11,13 @@ const POLL = 3e3 // dopo "Collega Telegram", controllo ogni 3 secondi se l'utent
 const join = a => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} e ${a[a.length - 1]}`)
 const base = s => s.replace(/USDT$/, '')
 
-// Pagina Notifiche: Telegram, regola e titoli seguiti. Solo per il piano con gli avvisi.
-export default function NotifyPanel({ plan, onUpgrade }) {
+// Pagina Notifiche: Telegram, regola e titoli seguiti. Serve l'account e il piano con gli avvisi.
+export default function NotifyPanel({ onUpgrade, onPrivacy }) {
+  const acc = useAccount()
   const premium = PLANS.find(p => p.alerts)
-  if (!planById(plan).alerts) {
+  if (acc.status === 'loading') return <p className="hint">Un attimo…</p>
+  if (acc.status !== 'in') return <Login onPrivacy={onPrivacy} lead="Accedi per ricevere su Telegram gli avvisi dei titoli che segui." />
+  if (!planById(acc.plan).alerts) {
     return (
       <div className="notify">
         <p className="notify__lead">Ricevi su Telegram un avviso appena 3m e 5m entrano insieme in ipervenduto o in ipercomprato, con un link che apre subito il titolo nell'app.</p>
@@ -32,57 +35,61 @@ export default function NotifyPanel({ plan, onUpgrade }) {
 }
 
 function NotifySettings() {
-  // Ultimo stato noto salvato sul dispositivo: la pagina è subito piena
-  const [st, setSt] = useState(() => load('notify', null))
+  const acc = useAccount()
+  const [server, setServer] = useState(null) // { configured, bot }
   const [error, setError] = useState(null)
   const [link, setLink] = useState(null) // { url, expires }
   const [waiting, setWaiting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [editRule, setEditRule] = useState(false)
+  const [draft, setDraft] = useState(null) // modifiche non ancora salvate
   const timer = useRef()
 
-  const apply = j => { setSt(j); save('notify', j); setError(null) }
-
   useEffect(() => {
-    notifyApi().then(apply).catch(e => setError(e.message))
+    acc.api('/api/notify').then(setServer).catch(e => setError(e.message))
     return () => clearTimeout(timer.current)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const linked = !!acc.sub?.linked
   // Link personale pronto prima del tocco: così il telefono apre Telegram senza blocchi
   useEffect(() => {
-    if (!st?.configured || st.linked || (link && link.expires - Date.now() > 60e3)) return
-    notifyApi({ action: 'link' }).then(setLink).catch(e => setError(e.message))
-  }, [st?.configured, st?.linked, link])
+    if (!server?.configured || linked || (link && link.expires - Date.now() > 60e3)) return
+    acc.api('/api/notify', { action: 'link' }).then(setLink).catch(e => setError(e.message))
+  }, [server?.configured, linked, link]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // In attesa che l'utente prema Avvia su Telegram
   useEffect(() => {
-    if (!waiting || st?.linked) { if (st?.linked) setWaiting(false); return }
+    if (!waiting || linked) { if (linked) setWaiting(false); return }
     let alive = true
-    const tick = () => notifyApi().then(j => { if (alive) apply(j) }).catch(() => null).finally(() => { if (alive) t = setTimeout(tick, POLL) })
+    const tick = () => acc.refresh().catch(() => null).finally(() => { if (alive) t = setTimeout(tick, POLL) })
     let t = setTimeout(tick, POLL)
     const stop = setTimeout(() => setWaiting(false), 15 * 60e3)
     return () => { alive = false; clearTimeout(t); clearTimeout(stop) }
-  }, [waiting, st?.linked])
+  }, [waiting, linked]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Le modifiche si salvano da sole, mezzo secondo dopo l'ultima
+  // Le modifiche si salvano da sole sull'account, mezzo secondo dopo l'ultima
+  const st = { ...acc.sub, ...draft }
   const update = patch => {
-    const next = { ...st, ...patch }
-    setSt(next)
-    save('notify', next)
+    const next = { ...draft, ...patch }
+    setDraft(next)
     clearTimeout(timer.current)
     timer.current = setTimeout(() => {
-      notifyApi({ action: 'save', symbols: next.symbols, rule: cleanRule(next.rule) }).then(j => { save('notify', j); setError(null) }).catch(e => setError(e.message))
+      const out = {}
+      if (next.symbols) out.symbols = next.symbols
+      if (next.rule) out.rule = cleanRule(next.rule)
+      acc.saveSub(out).then(() => { setDraft(null); setError(null) }).catch(e => setError(e.message))
     }, 500)
   }
 
   const unlink = async () => {
     setBusy(true)
-    try { apply(await notifyApi({ action: 'unlink' })); setLink(null) } catch (e) { setError(e.message) }
+    try { await acc.api('/api/notify', { action: 'unlink' }); setLink(null); await acc.refresh() } catch (e) { setError(e.message) }
     setBusy(false)
   }
 
-  if (!st) return <p className="hint">{error ? 'Non riesco a raggiungere il server delle notifiche. Riprova tra poco.' : 'Carico le tue notifiche…'}</p>
-  if (!st.configured) return <p className="hint">Le notifiche Telegram non sono ancora attive su questo server.</p>
+  if (!server || !acc.sub) return <p className="hint">{error ? 'Non riesco a raggiungere il server delle notifiche. Riprova tra poco.' : 'Carico le tue notifiche…'}</p>
+  if (!server.configured) return <p className="hint">Le notifiche Telegram non sono ancora attive su questo server.</p>
+  st.bot = server.bot
 
   const rule = st.rule || DEFAULT_RULE
   const symbols = st.symbols || []

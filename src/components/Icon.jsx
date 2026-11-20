@@ -8,6 +8,8 @@ const P = {
   down: 'M4 7l6 6 4-4 6 7 M14 16h6v-6',
   expand: 'M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5',
   bubbles: 'M3.5 14.5a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0 M14 7.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0 M16 17.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
+  mail: 'M4 6h16v12H4z M4 7l8 6 8-6',
+  camera: 'M4 8h4l2-2h4l2 2h4v11H4z M12 10.5a3 3 0 1 0 0 6a3 3 0 1 0 0-6z',
   star: 'M12 3.6l2.6 5.3 5.8.85-4.2 4.1 1 5.8L12 16.9l-5.2 2.75 1-5.8-4.2-4.1 5.8-.85z',
 }
 export default function Icon({ name, size = 18, filled = false }) {

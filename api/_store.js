@@ -30,6 +30,17 @@ function local([cmd, ...a]) {
     case 'SADD': { const s = set(a[0]); a.slice(1).forEach(v => s.add(v)); return 1 }
     case 'SREM': { const s = set(a[0]); a.slice(1).forEach(v => s.delete(v)); return 1 }
     case 'SMEMBERS': return [...set(a[0])]
+    case 'RPUSH': case 'LPUSH': {
+      const l = Array.isArray(mem.get(a[0])) ? mem.get(a[0]) : []
+      if (cmd.toUpperCase() === 'RPUSH') l.push(...a.slice(1)); else l.unshift(...a.slice(1).reverse())
+      mem.set(a[0], l); return l.length
+    }
+    case 'LPOP': {
+      const l = Array.isArray(mem.get(a[0])) ? mem.get(a[0]) : []
+      const n = a[1] == null ? 1 : Number(a[1]); const out = l.splice(0, n)
+      return a[1] == null ? out[0] ?? null : (out.length ? out : null)
+    }
+    case 'LLEN': return Array.isArray(mem.get(a[0])) ? mem.get(a[0]).length : 0
     default: throw new Error('Comando non previsto: ' + cmd)
   }
 }
@@ -57,8 +68,11 @@ export async function pipeline(cmds) {
   return out.map(x => { if (x.error) throw new Error('Archivio: ' + x.error); return x.result })
 }
 
-// Utente (u:<id>): { chat, name, symbols: [{ s, near }], rule, at }
-// Memoria anti-spam (m:<id>): { SYM: { oversold: { z, n }, overbought: { z, n } } }, la scrive solo il controllo
+// Stato veloce degli avvisi (i dati degli utenti stanno su Supabase):
+//  m:<userId>     memoria anti-spam { SYM: { oversold: { z, n }, overbought: { z, n } } }, la scrive solo il controllo
+//  link:<codice>  codice del link personale al bot (15 minuti) → userId
+//  tgq            coda dei messaggi Telegram da inviare a scaglioni
+//  u:<deviceId>   vecchi collegamenti per dispositivo (prima degli account): letti solo per trasferirli
 export const userKey = id => 'u:' + id
 export const memKey = id => 'm:' + id
 export const parse = v => { try { return v ? JSON.parse(v) : null } catch { return null } }

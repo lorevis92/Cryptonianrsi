@@ -1,3 +1,19 @@
 {
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/alerts/check",
+      "schedule": "* * * * *"
+    }
+  ],
+  "functions": {
+    "api/alerts/check.js": {
+      "maxDuration": 60
+    }
+  }
 }

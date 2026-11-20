@@ -8,7 +8,9 @@ import PlanPanel from './components/PlanPanel.jsx'
 import IndicatorPanel from './components/IndicatorPanel.jsx'
 import NotifyPanel from './components/NotifyPanel.jsx'
 import RiskPanel from './components/RiskPanel.jsx'
-import { DisclaimerGate, LegalLine, LegalPanel } from './components/Legal.jsx'
+import { DisclaimerGate, LegalLine, LegalPanel, PrivacyPanel } from './components/Legal.jsx'
+import AccountPanel from './components/AccountPanel.jsx'
+import { useAccount } from './lib/account.jsx'
 import { DISCLAIMER_VERSION } from './lib/legal.js'
 import CardBoundary from './components/CardBoundary.jsx'
 import BubbleMap from './components/BubbleMap.jsx'
@@ -19,13 +21,15 @@ import { bubbleData } from './lib/bubbleDraw.js'
 import { TIMEFRAMES, planById } from './lib/plans.js'
 import { DEFAULTS } from './lib/stochrsi.js'
 import { MAIN_TREND_TF } from './lib/trend.js'
-import { load, save } from './lib/storage.js'
+import { load, save, onRemote } from './lib/storage.js'
 
-const MENU = [['plan', 'Il tuo piano'], ['indicator', 'Indicatore'], ['notify', 'Notifiche'], ['legal', 'Note legali']]
+const MENU = [['account', 'Account'], ['plan', 'Il tuo piano'], ['indicator', 'Indicatore'], ['notify', 'Notifiche'], ['legal', 'Note legali'], ['privacy', 'Privacy']]
 
 export default function App() {
   const [symbol, setSymbol] = useState(() => load('symbol', 'BTCUSDT'))
-  const [plan, setPlan] = useState(() => load('plan', 'free'))
+  // Il piano sta sull'account (senza login: Gratuito)
+  const account = useAccount()
+  const plan = account.plan
   const [params, setParams] = useState(() => ({ ...DEFAULTS, ...load('params', {}) }))
   const [states, setStates] = useState({})
   const [sheet, setSheet] = useState(null)
@@ -69,7 +73,8 @@ export default function App() {
   }, [openSymbol])
 
   useEffect(() => save('symbol', symbol), [symbol])
-  useEffect(() => save('plan', plan), [plan])
+  // Impostazioni dell'indicatore arrivate dall'account
+  useEffect(() => onRemote(['params'], () => setParams({ ...DEFAULTS, ...load('params', {}) })), [])
   useEffect(() => save('params', params), [params])
   useEffect(() => setStates({}), [symbol])
   // Il chip del titolo attivo resta in vista nella fila dei preferiti
@@ -98,7 +103,7 @@ export default function App() {
   }, [symbol, states, scanTails, trends, unlocked, params])
   const bubbleToMap = useCallback(() => { setHighlight(symbol); backToMap() }, [symbol, backToMap])
 
-  const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', notify: 'Notifiche', legal: 'Note legali', risk: 'Calcola il rischio' }
+  const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', notify: 'Notifiche', legal: 'Note legali', privacy: 'Privacy', risk: 'Calcola il rischio', account: account.status === 'in' ? 'Area personale' : 'Accedi' }
 
   return (
     <div className={'app is-' + view}>
@@ -166,13 +171,15 @@ export default function App() {
         {sheet === 'symbol' && <SymbolPicker current={symbol} favorites={favorites} onToggleFavorite={toggleFavorite} onPick={s => { openSymbol(s); setSheet(null) }} />}
         {sheet === 'menu' && (
           <ul className="menu">
-            {MENU.map(([id, label]) => <li key={id}><button onClick={() => setSheet(id)}>{label}{id === 'plan' && <span className="menu__meta">{planById(plan).name}</span>}</button></li>)}
+            {MENU.map(([id, label]) => <li key={id}><button onClick={() => setSheet(id)}>{id === 'account' ? (account.status === 'in' ? 'Area personale' : 'Accedi') : label}{id === 'plan' && <span className="menu__meta">{planById(plan).name}</span>}{id === 'account' && account.status === 'in' && <span className="menu__meta">{account.profile?.name || account.user?.email}</span>}</button></li>)}
           </ul>
         )}
-        {sheet === 'plan' && <PlanPanel plan={plan} onChange={setPlan} />}
+        {sheet === 'account' && <AccountPanel onPlans={() => setSheet('plan')} onNotify={() => setSheet('notify')} onPrivacy={() => setSheet('privacy')} />}
+        {sheet === 'plan' && <PlanPanel onLogin={() => setSheet('account')} />}
         {sheet === 'indicator' && <IndicatorPanel params={params} onChange={setParams} />}
-        {sheet === 'notify' && <NotifyPanel plan={plan} onUpgrade={() => setSheet('plan')} />}
+        {sheet === 'notify' && <NotifyPanel onUpgrade={() => setSheet('plan')} onPrivacy={() => setSheet('privacy')} />}
         {sheet === 'legal' && <LegalPanel />}
+        {sheet === 'privacy' && <PrivacyPanel />}
         {sheet === 'risk' && <RiskPanel symbol={symbol} />}
       </Sheet>
       {!accepted && sheet !== 'legal' && <DisclaimerGate onAccept={accept} onRead={() => setSheet('legal')} />}

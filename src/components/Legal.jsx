@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { DISCLAIMER, DISCLAIMER_SHORT, LEGAL } from '../lib/legal.js'
+import { PRIVACY, PRIVACY_UPDATED } from '../lib/privacy.js'
 
 // Schermata del primo avvio: da accettare una volta (crsi:disclaimer).
 export function DisclaimerGate({ onAccept, onRead }) {
@@ -38,6 +39,21 @@ export function LegalPanel() {
           {paras.map((p, i) => <p key={i}>{p}</p>)}
         </section>
       ))}
+    </div>
+  )
+}
+
+// Pagina "Privacy" (nel menu): quali dati, a cosa servono, come cancellarli
+export function PrivacyPanel() {
+  return (
+    <div className="legal">
+      {PRIVACY.map(([title, paras]) => (
+        <section key={title}>
+          <h3 className="legal__title">{title}</h3>
+          {paras.map((p, i) => <p key={i}>{p}</p>)}
+        </section>
+      ))}
+      <p className="hint">Aggiornata il {PRIVACY_UPDATED}.</p>
     </div>
   )
 }

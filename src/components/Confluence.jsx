@@ -30,7 +30,7 @@ export default function Confluence({ states, unlocked, params, onLocked, bubble,
   const [tip, setTip] = useState(false)
   useEffect(() => { if (!tip) return; const x = setTimeout(() => setTip(false), 3500); return () => clearTimeout(x) }, [tip])
 
-  // Semaforo di contesto: zona dello Stoch RSI (sui 7 timeframe, come la bolla) + trend principale
+  // Semaforo di contesto: zona dello Stoch RSI (sugli 8 timeframe, come la bolla) + trend principale
   const main = trends[MAIN_TREND_TF]
   const mix = bubble && combined(bubble.side, main)
   const ctx = main === undefined ? null

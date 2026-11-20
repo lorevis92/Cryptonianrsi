@@ -7,10 +7,10 @@ import { redis, hasStore } from './_store.js'
 // e solo la coda di K e D nel risultato, più il trend rispetto all'EMA 200 (t: 1 sopra, -1 sotto, 0 dati insufficienti).
 // La usano /api/scan, /api/snapshot e il controllo delle notifiche.
 
-export const TFS = ['1m', '3m', '5m', '15m', '1h', '4h', '1d']
+export const TFS = ['1m', '3m', '5m', '15m', '1h', '4h', '1d', '1w']
 // Ogni quanto si ricalcola un timeframe (secondi): i timeframe lenti cambiano poco,
 // così ogni aggiornamento della fotografia rifà solo quelli scaduti.
-export const TTL = { '1m': 60, '3m': 90, '5m': 120, '15m': 240, '1h': 480, '4h': 900, '1d': 1800 }
+export const TTL = { '1m': 60, '3m': 90, '5m': 120, '15m': 240, '1h': 480, '4h': 900, '1d': 1800, '1w': 3600 }
 const TOP = 50
 const TAIL = 4
 const CONCURRENCY = 4 // insieme al limite di _bitunix.js resta sotto le 8 richieste/secondo

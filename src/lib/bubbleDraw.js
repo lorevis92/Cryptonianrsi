@@ -3,7 +3,7 @@ import { RING_SIZE, ringValue } from './alignment.js'
 // Disegno di una bolla, unico per la mappa e per il dettaglio: così le due viste restano identiche.
 // Nodo: { x, y, r, label, rc: { tf: -1…1 }, rt (obiettivo), g (alone 0–1), tg, gs (lato), sigA, sig, pulseAt, hlA, hl }
 
-export const OUTER_TO_INNER = ['1d', '4h', '1h', '15m', '5m', '3m', '1m']
+export const OUTER_TO_INNER = ['1w', '1d', '4h', '1h', '15m', '5m', '3m', '1m']
 const RING_TOTAL = OUTER_TO_INNER.reduce((a, tf) => a + RING_SIZE[tf], 0)
 const CYAN = '25,230,208', PINK = '255,79,123'
 export const EASE_C = 0.03   // velocità con cui cambiano colori, alone e anelli (per fotogramma)

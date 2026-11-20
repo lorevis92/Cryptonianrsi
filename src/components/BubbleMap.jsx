@@ -26,7 +26,7 @@ function ago(ms) {
 const fmtW = w => String(w).replace('.', ',')
 const listJoin = a => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} o ${a[a.length - 1]}`)
 
-// Pagina iniziale: l'allineamento dello Stochastic RSI sui 7 timeframe, a colpo d'occhio.
+// Pagina iniziale: l'allineamento dello Stochastic RSI sugli 8 timeframe, a colpo d'occhio.
 export default function BubbleMap({ favorites, params, onOpen, highlight = null, onClearHighlight, footer = null }) {
   const [view, setView] = useState(() => load('mapView', 'bubbles'))
   const [filter, setFilter] = useState(() => load('mapFilter', 'all'))
@@ -81,10 +81,10 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
 
       {legend && (
         <div className="legend" id="legenda">
-          <MiniRings size={92} rings={{ '1d': 0.9, '4h': 0.7, '1h': 0.45, '15m': 0, '5m': -0.3, '3m': -0.6, '1m': -0.95 }} signal />
+          <MiniRings size={92} rings={{ '1w': 0.95, '1d': 0.9, '4h': 0.7, '1h': 0.45, '15m': 0, '5m': -0.3, '3m': -0.6, '1m': -0.95 }} signal />
           <div className="legend__text">
             <p><b>Lo Stochastic RSI</b> va da 0 a 100 e dice se un prezzo ha corso troppo: sotto {params.lower} è <em className="t-os">ipervenduto</em> (il prezzo è sceso molto e in fretta), sopra {params.upper} è <em className="t-ob">ipercomprato</em> (è salito molto e in fretta). Descrive il movimento, non dice cosa fare.</p>
-            <p><b>Ogni anello è un timeframe.</b> All'esterno 1d, poi 4h, 1h, 15m, 5m, 3m, fino a 1m al centro. Più K è estremo, più il colore è pieno.</p>
+            <p><b>Ogni anello è un timeframe.</b> All'esterno 1w (settimanale), poi 1d, 4h, 1h, 15m, 5m, 3m, fino a 1m al centro. Più K è estremo, più il colore è pieno.</p>
             <p className="legend__keys">
               <span><i className="key key--os" />Ipervenduto</span>
               <span><i className="key key--ob" />Ipercomprato</span>
@@ -106,7 +106,7 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
             <p className="legend__weights">
               {Object.entries(WEIGHTS).map(([tf, w]) => <span key={tf}>{tf} <b>{fmtW(w)}</b></span>)}
             </p>
-            <p>Ogni timeframe in zona porta il {Math.round(IN_ZONE_BASE * 100)}% del suo peso; il resto è un piccolo bonus che cresce quanto più K è estremo. Tutti e 7 nella stessa zona fanno almeno {Math.round(IN_ZONE_BASE * 100)}, fino a 100. 0 vuol dire nessun timeframe in zona. Un timeframe nella zona opposta toglie punti. Il punteggio non è relativo: il primo dell'elenco non ha per forza 100. Il colore del numero dice la direzione: <em className="t-os">ciano ipervenduto</em>, <em className="t-ob">rosa ipercomprato</em>.</p>
+            <p>Ogni timeframe in zona porta il {Math.round(IN_ZONE_BASE * 100)}% del suo peso; il resto è un piccolo bonus che cresce quanto più K è estremo. Tutti e {TIMEFRAMES.length} nella stessa zona fanno almeno {Math.round(IN_ZONE_BASE * 100)}, fino a 100. 0 vuol dire nessun timeframe in zona. Un timeframe nella zona opposta toglie punti. Il punteggio non è relativo: il primo dell'elenco non ha per forza 100. Il colore del numero dice la direzione: <em className="t-os">ciano ipervenduto</em>, <em className="t-ob">rosa ipercomprato</em>.</p>
             <p>Da {Math.round(STRONG_SCORE * 100)} in su la lettura diventa forte: <em className="t-os">{STRONG_LABEL.oversold}</em> · {ATTENTION_LABEL.oversold} o <em className="t-ob">{STRONG_LABEL.overbought}</em> · {ATTENTION_LABEL.overbought}.</p>
             <p><b>Nelle Bolle lo stesso punteggio decide la grandezza:</b> più è alto, più la bolla è grande e luminosa.</p>
             <p>L'anello dorato indica una zona di attenzione: K ha appena incrociato D dentro la zona su {listJoin(SIGNAL_TIMEFRAMES)}. Sono letture dell'indicatore, non indicazioni a comprare o vendere.</p>

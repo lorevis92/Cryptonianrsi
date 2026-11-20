@@ -1,6 +1,5 @@
 import { RING_SIZE } from '../lib/alignment.js'
-
-const OUTER_TO_INNER = ['1d', '4h', '1h', '15m', '5m', '3m', '1m']
+import { OUTER_TO_INNER } from '../lib/bubbleDraw.js'
 const TOTAL = OUTER_TO_INNER.reduce((a, tf) => a + RING_SIZE[tf], 0)
 
 const color = v => (v > 0 ? `rgba(25,230,208,${(Math.min(1, v) * 0.92).toFixed(3)})`

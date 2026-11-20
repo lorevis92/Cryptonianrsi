@@ -46,7 +46,7 @@ export default function TimeframeCard({ symbol, tf, unlocked, params, onState, o
       <header className="card__head">
         <span className="card__tf">{tf}</span>
         <span className="card__state">
-          <span className="card__zone">{s?.K != null ? ZONE_LABEL[s.zone] : ''}</span>
+          <span className="card__zone">{s?.K != null ? ZONE_LABEL[s.zone] : bars?.length && s ? 'Dati insufficienti' : ''}</span>
           {s?.K != null && <TrendMark t={trend} tf={tf} size="auto" />}
         </span>
         <span className="card__price">{fmtPrice(last?.c, precision)}</span>

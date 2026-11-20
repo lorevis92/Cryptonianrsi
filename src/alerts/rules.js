@@ -22,7 +22,7 @@ export const RULE_LIMITS = { lower: [1, 45], upper: [55, 99] }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TFS = ['1m', '3m', '5m', '15m', '1h', '4h', '1d']
+const TFS = ['1m', '3m', '5m', '15m', '1h', '4h', '1d', '1w']
 
 export function cleanRule(r) {
   const tfs = TFS.filter(tf => r?.tfs?.includes(tf)).slice(0, MAX_RULE_TFS)

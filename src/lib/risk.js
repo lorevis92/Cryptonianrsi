@@ -5,7 +5,7 @@ export const STOP_ATR = 1.5        // stop suggerito: 1,5 × ATR dal prezzo
 export const RISK_DEFAULT = 1      // % del capitale rischiata per trade
 export const RISK_HINT = [0.5, 2]  // intervallo suggerito
 export const LEVERAGE_WARN = 5     // oltre questa leva compare l'avviso
-export const RISK_TFS = ['1m', '3m', '5m', '15m', '1h', '4h', '1d'] // timeframe tra cui scegliere la volatilità
+export const RISK_TFS = ['1m', '3m', '5m', '15m', '1h', '4h', '1d', '1w'] // timeframe tra cui scegliere la volatilità
 export const RR_DEFAULT = 2        // take profit di partenza: distanza doppia rispetto allo stop (2:1)
 export const RR_CHOICES = [1.5, 2, 3]
 

@@ -9,7 +9,7 @@ import { load, save } from './storage.js'
 // poi si aggiorna in sottofondo. Con parametri personalizzati calcola timeframe per timeframe (/api/scan).
 
 // Ogni quanto si richiede di nuovo un timeframe (millisecondi) quando si usa /api/scan.
-export const SCAN_REFRESH = { '1m': 30e3, '3m': 60e3, '5m': 60e3, '15m': 120e3, '1h': 240e3, '4h': 600e3, '1d': 1200e3 }
+export const SCAN_REFRESH = { '1m': 30e3, '3m': 60e3, '5m': 60e3, '15m': 120e3, '1h': 240e3, '4h': 600e3, '1d': 1200e3, '1w': 2400e3 }
 // Ogni quanto si chiede una fotografia nuova (la CDN la rinnova ogni minuto).
 export const SNAPSHOT_REFRESH = 60e3
 

@@ -5,17 +5,17 @@
 import { readTail } from './stochrsi.js'
 
 // Quanto conta ogni timeframe nel punteggio di allineamento.
-export const WEIGHTS = { '1m': 1, '3m': 1.5, '5m': 2, '15m': 3, '1h': 4, '4h': 5, '1d': 6 }
+export const WEIGHTS = { '1m': 1, '3m': 1.5, '5m': 2, '15m': 3, '1h': 4, '4h': 5, '1d': 6, '1w': 7 }
 
 // Spessore degli anelli nella bolla (proporzioni). 1m è il disco al centro,
-// 1d l'anello più esterno: gli esterni sono più spessi perché contano di più.
-export const RING_SIZE = { '1m': 1.6, '3m': 1, '5m': 1.1, '15m': 1.2, '1h': 1.35, '4h': 1.5, '1d': 1.7 }
+// 1w l'anello più esterno: gli esterni sono più spessi perché contano di più.
+export const RING_SIZE = { '1m': 1.7, '3m': 0.95, '5m': 1, '15m': 1.1, '1h': 1.2, '4h': 1.35, '1d': 1.5, '1w': 1.7 }
 
 // Il punteggio misura soprattutto QUANTI timeframe sono nella stessa zona (pesati),
 // con un piccolo bonus per quanto sono estremi. Scala assoluta: non dipende dagli altri titoli.
 // 0.85 = un timeframe appena entrato in zona vale l'85% del suo peso; il 15% che manca
 // arriva man mano che K va verso 0 (ipervenduto) o 100 (ipercomprato).
-// Così: tutti e 7 nella stessa zona = da 85 a 100.
+// Così: tutti e 8 nella stessa zona = da 85 a 100.
 export const IN_ZONE_BASE = 0.85
 
 // Quanto toglie un timeframe nella zona opposta (0 = niente, 1 = annulla il suo peso).

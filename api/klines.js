@@ -3,7 +3,7 @@ import { emaLine } from './_scan.js'
 
 // Quanto tempo la risposta resta in cache su Vercel, per timeframe (secondi).
 // Così più utenti sullo stesso titolo non moltiplicano le richieste a Bitunix.
-const CACHE = { '1m': 10, '3m': 20, '5m': 25, '15m': 50, '1h': 100, '4h': 240, '1d': 500 }
+const CACHE = { '1m': 10, '3m': 20, '5m': 25, '15m': 50, '1h': 100, '4h': 240, '1d': 500, '1w': 1000 }
 const ALLOWED = Object.keys(CACHE)
 
 export default async function handler(req, res) {

@@ -53,5 +53,5 @@ Concept: strumento di precisione. Scala graduata incisa in oro, le uniche cose a
 - Ingrandire un grafico: da telefono sale dal basso a tutto schermo (timeframe, K, D, chiudi); da computer la card si allarga a tutta la riga con View Transitions (altrimenti FLIP).
 - I grafici sono inattivi finché non li tocchi: il dito e la rotella scorrono la pagina. Col mouse gli assi (scala) sono sempre attivi; col dito anche gli assi funzionano solo dopo aver attivato il grafico. Attivi = leggera scala e bordo dorato più acceso.
 - Rispetta sempre `prefers-reduced-motion`: niente deriva, niente impulsi, valori subito al loro posto.
-- Account, selettore del piano, Notifiche, Note legali e Privacy stanno nel menu, non sempre in vista. I timeframe bloccati si vedono sbiaditi con il lucchetto.
+- Account, selettore del piano, Notifiche, Note legali e Privacy stanno nel menu, non sempre in vista. Note legali e Privacy sono pagine pubbliche con indirizzo diretto: `/termini` (alias `/terms`) e `/privacy` (`src/lib/route.js`, `PublicPage.jsx`, scelte in `main.jsx`), senza login e senza avvertenza iniziale. I timeframe bloccati si vedono sbiaditi con il lucchetto.
 - Prima il telefono; da 980px in su colonna di confluenza fissa a sinistra e card a griglia a destra.

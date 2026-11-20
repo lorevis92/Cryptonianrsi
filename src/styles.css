@@ -536,3 +536,14 @@ p { margin: 0; }
 .crop__ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(6, 7, 11, .55); border: 1px solid var(--gold-line); pointer-events: none; }
 .crop__zoom { width: 260px; accent-color: var(--gold); }
 .crop .account__confirm { width: 100%; }
+
+/* ---------- Pagine pubbliche: /privacy, /termini ---------- */
+.public { min-height: 100vh; min-height: 100dvh; }
+.public__top { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) 16px 12px; background: rgba(6, 7, 11, .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--hair); }
+.public__brand { text-decoration: none; }
+.public__body { max-width: 680px; margin: 0 auto; padding: 24px 20px calc(40px + env(safe-area-inset-bottom)); }
+.public__title { margin: 0 0 18px; font-family: var(--serif); font-weight: 400; font-size: 34px; color: var(--gold-light); }
+.public__body .legal { font-size: 15px; gap: 22px; }
+.public__body .legal__title { font-size: 19px; }
+.public__links { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--hair); font-size: 14px; }
+.public__links a { color: var(--gold); text-decoration: underline; text-decoration-color: var(--gold-line); text-underline-offset: 3px; }

@@ -8,7 +8,8 @@ import PlanPanel from './components/PlanPanel.jsx'
 import IndicatorPanel from './components/IndicatorPanel.jsx'
 import NotifyPanel from './components/NotifyPanel.jsx'
 import RiskPanel from './components/RiskPanel.jsx'
-import { DisclaimerGate, LegalLine, LegalPanel, PrivacyPanel } from './components/Legal.jsx'
+import { DisclaimerGate, LegalLine } from './components/Legal.jsx'
+import { goTo, PATH_OF } from './lib/route.js'
 import AccountPanel from './components/AccountPanel.jsx'
 import { useAccount } from './lib/account.jsx'
 import { DISCLAIMER_VERSION } from './lib/legal.js'
@@ -23,6 +24,8 @@ import { DEFAULTS } from './lib/stochrsi.js'
 import { MAIN_TREND_TF } from './lib/trend.js'
 import { load, save, onRemote } from './lib/storage.js'
 
+// Note legali e Privacy sono pagine pubbliche con indirizzo diretto (/termini, /privacy): il menu porta lì
+const PAGE_OF_MENU = { legal: 'terms', privacy: 'privacy' }
 const MENU = [['account', 'Account'], ['plan', 'Il tuo piano'], ['indicator', 'Indicatore'], ['notify', 'Notifiche'], ['legal', 'Note legali'], ['privacy', 'Privacy']]
 
 export default function App() {
@@ -103,6 +106,10 @@ export default function App() {
   }, [symbol, states, scanTails, trends, unlocked, params])
   const bubbleToMap = useCallback(() => { setHighlight(symbol); backToMap() }, [symbol, backToMap])
 
+  const openPage = useCallback(p => { setSheet(null); goTo(PATH_OF[p]) }, [])
+  const openTerms = useCallback(() => openPage('terms'), [openPage])
+  const openPrivacy = useCallback(() => openPage('privacy'), [openPage])
+
   const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', notify: 'Notifiche', legal: 'Note legali', privacy: 'Privacy', risk: 'Calcola il rischio', account: account.status === 'in' ? 'Area personale' : 'Accedi' }
 
   return (
@@ -150,7 +157,7 @@ export default function App() {
 
       {view === 'map' ? (
         <BubbleMap favorites={favorites} params={params} onOpen={openSymbol} highlight={highlight} onClearHighlight={() => setHighlight(null)}
-          footer={<LegalLine onOpen={() => setSheet('legal')} />} />
+          footer={<LegalLine onOpen={openTerms} />} />
       ) : (
         <main className="layout">
           <aside className="layout__side">
@@ -163,7 +170,7 @@ export default function App() {
               </CardBoundary>
             ))}
           </div>
-          <div className="layout__legal"><LegalLine onOpen={() => setSheet('legal')} /></div>
+          <div className="layout__legal"><LegalLine onOpen={openTerms} /></div>
         </main>
       )}
 
@@ -171,18 +178,16 @@ export default function App() {
         {sheet === 'symbol' && <SymbolPicker current={symbol} favorites={favorites} onToggleFavorite={toggleFavorite} onPick={s => { openSymbol(s); setSheet(null) }} />}
         {sheet === 'menu' && (
           <ul className="menu">
-            {MENU.map(([id, label]) => <li key={id}><button onClick={() => setSheet(id)}>{id === 'account' ? (account.status === 'in' ? 'Area personale' : 'Accedi') : label}{id === 'plan' && <span className="menu__meta">{planById(plan).name}</span>}{id === 'account' && account.status === 'in' && <span className="menu__meta">{account.profile?.name || account.user?.email}</span>}</button></li>)}
+            {MENU.map(([id, label]) => <li key={id}><button onClick={() => (PATH_OF[PAGE_OF_MENU[id]] ? openPage(PAGE_OF_MENU[id]) : setSheet(id))}>{id === 'account' ? (account.status === 'in' ? 'Area personale' : 'Accedi') : label}{id === 'plan' && <span className="menu__meta">{planById(plan).name}</span>}{id === 'account' && account.status === 'in' && <span className="menu__meta">{account.profile?.name || account.user?.email}</span>}</button></li>)}
           </ul>
         )}
-        {sheet === 'account' && <AccountPanel onPlans={() => setSheet('plan')} onNotify={() => setSheet('notify')} onPrivacy={() => setSheet('privacy')} />}
+        {sheet === 'account' && <AccountPanel onPlans={() => setSheet('plan')} onNotify={() => setSheet('notify')} onPrivacy={openPrivacy} />}
         {sheet === 'plan' && <PlanPanel onLogin={() => setSheet('account')} />}
         {sheet === 'indicator' && <IndicatorPanel params={params} onChange={setParams} />}
-        {sheet === 'notify' && <NotifyPanel onUpgrade={() => setSheet('plan')} onPrivacy={() => setSheet('privacy')} />}
-        {sheet === 'legal' && <LegalPanel />}
-        {sheet === 'privacy' && <PrivacyPanel />}
+        {sheet === 'notify' && <NotifyPanel onUpgrade={() => setSheet('plan')} onPrivacy={openPrivacy} />}
         {sheet === 'risk' && <RiskPanel symbol={symbol} />}
       </Sheet>
-      {!accepted && sheet !== 'legal' && <DisclaimerGate onAccept={accept} onRead={() => setSheet('legal')} />}
+      {!accepted && <DisclaimerGate onAccept={accept} onRead={openTerms} />}
     </div>
   )
 }

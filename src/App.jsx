@@ -76,6 +76,9 @@ export default function App() {
   }, [openSymbol])
 
   useEffect(() => save('symbol', symbol), [symbol])
+  // Arrivato dal link "reimposta la password": apro l'area personale per scegliere la nuova
+  useEffect(() => { if (account.recovery) setSheet('account') }, [account.recovery])
+
   // Impostazioni dell'indicatore arrivate dall'account
   useEffect(() => onRemote(['params'], () => setParams({ ...DEFAULTS, ...load('params', {}) })), [])
   useEffect(() => save('params', params), [params])

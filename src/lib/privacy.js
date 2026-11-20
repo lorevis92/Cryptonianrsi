@@ -10,7 +10,7 @@ export const PRIVACY = [
     'Puoi usare la mappa, l\'elenco e il dettaglio dei titoli senza registrarti. In questo caso preferiti e impostazioni restano solo nel tuo browser (memoria locale del dispositivo) e non arrivano a noi.',
   ]],
   ['Con l\'account', [
-    'Account: email e, se accedi con Google, nome e identificativo forniti da Google. Non riceviamo né conserviamo password.',
+    'Account: email e, se accedi con Google, nome e identificativo forniti da Google. Se ti registri con email e password, la password è conservata da Supabase solo in forma cifrata irreversibile (hash): nessuno, nemmeno noi, può leggerla.',
     'Profilo: il nome che scegli e, se la carichi, la foto profilo (ridotta e compressa sul tuo telefono prima dell\'invio). La foto è privata: la vedi solo tu.',
     'Impostazioni: piano, titoli preferiti, impostazioni del calcolatore del rischio e dell\'indicatore, per ritrovarle su tutti i tuoi dispositivi.',
     'Notifiche: titoli seguiti, regola degli avvisi e, se colleghi Telegram, l\'identificativo della chat e il nome utente Telegram, per mandarti gli avvisi. Per evitare messaggi doppi conserviamo per 30 giorni l\'ultimo stato degli avvisi di ciascun titolo.',

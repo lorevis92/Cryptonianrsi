@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { load, save, onSave, applyRemote } from './storage.js'
 import { DEFAULT_RULE } from '../alerts/rules.js'
 
-// Account utente con Supabase Auth (Google o link via email, senza password).
+// Account utente con Supabase Auth: Google oppure email e password (con conferma dell'email).
 // - La libreria di Supabase si carica dopo il primo disegno: la mappa resta istantanea.
 // - Il browser usa solo URL e chiave anon/publishable (da /api/config): i dati sono protetti dalla RLS.
 // - Profilo, impostazioni e notifiche si leggono e scrivono direttamente (solo le proprie righe);
@@ -13,6 +13,32 @@ import { DEFAULT_RULE } from '../alerts/rules.js'
 // Chiavi locali sincronizzate con l'account → colonna di user_settings
 const SYNC = { favorites: 'favorites', risk: 'risk', params: 'indicator' }
 const SAVE_DELAY = 800
+
+// Requisiti della password: gli stessi da impostare in Supabase (lunghezza minima 8, lettere e numeri)
+export const PASSWORD_MIN = 8
+export const passwordChecks = pw => [
+  { ok: pw.length >= PASSWORD_MIN, text: `Almeno ${PASSWORD_MIN} caratteri` },
+  { ok: /[A-Za-zÀ-ÿ]/.test(pw), text: 'Almeno una lettera' },
+  { ok: /\d/.test(pw), text: 'Almeno un numero' },
+]
+
+// Errori di Supabase Auth in italiano
+export function authMessage(e) {
+  const code = e?.code || '', msg = (e?.message || '').toLowerCase()
+  if (code === 'invalid_credentials' || msg.includes('invalid login credentials')) return 'Email o password non corrette.'
+  if (code === 'email_not_confirmed' || msg.includes('email not confirmed')) return "Devi ancora confermare l'email: apri il link che ti abbiamo mandato (guarda anche nella posta indesiderata)."
+  if (code === 'user_already_exists' || code === 'email_exists' || msg.includes('already registered')) return 'Questa email è già registrata: accedi, oppure recupera la password.'
+  if (code === 'weak_password' || msg.includes('password should')) return 'Password troppo debole: almeno 8 caratteri, con lettere e numeri.'
+  if (code === 'same_password') return 'La nuova password deve essere diversa da quella attuale.'
+  if (code.includes('rate_limit') || msg.includes('rate limit') || msg.includes('security purposes')) return 'Troppe richieste: riprova tra qualche minuto.'
+  if (code === 'signup_disabled') return 'Le nuove registrazioni sono chiuse in questo momento.'
+  if (code === 'validation_failed' || msg.includes('invalid email') || msg.includes('unable to validate email')) return "Controlla l'indirizzo email."
+  if (code === 'reauthentication_needed') return 'Per sicurezza esci e rientra, poi cambia la password.'
+  if (code === 'otp_expired' || msg.includes('expired')) return 'Il link è scaduto: chiedine uno nuovo.'
+  if (msg.includes('fetch') || msg.includes('network')) return 'Connessione assente: riprova.'
+  return e?.message || 'Qualcosa non ha funzionato: riprova.'
+}
+const fail = e => { const x = new Error(authMessage(e)); x.code = e?.code; throw x }
 
 const Ctx = createContext(null)
 export const useAccount = () => useContext(Ctx)
@@ -41,6 +67,7 @@ export function AccountProvider({ children }) {
   const [sub, setSub] = useState(null)
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [error, setError] = useState(null)
+  const [recovery, setRecovery] = useState(false) // arrivato dal link "reimposta la password"
   const sb = useRef(null)
   const uidRef = useRef(null)
 
@@ -125,13 +152,16 @@ export function AccountProvider({ children }) {
         await refresh(u.id) // piano e Telegram dopo il trasferimento
         if (alive) setStatus('in')
       }
-      const { data } = c.auth.onAuthStateChange((_event, session) => { setTimeout(() => onUser(session?.user || null), 0) })
+      const { data } = c.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') setRecovery(true)
+        setTimeout(() => onUser(session?.user || null), 0)
+      })
       off = () => data.subscription.unsubscribe()
       const { data: s } = await c.auth.getSession()
       onUser(s.session?.user || null)
     }
     // Dopo il primo disegno, o subito se si torna dal login (token o codice nell'indirizzo)
-    const back = /access_token|code=|error_description/.test(location.hash + location.search)
+    const back = /access_token|code=|error_description|type=recovery/.test(location.hash + location.search)
     const t = back ? setTimeout(start, 0) : (window.requestIdleCallback ? requestIdleCallback(start, { timeout: 1500 }) : setTimeout(start, 300))
     return () => { alive = false; off?.(); if (!back && window.cancelIdleCallback) cancelIdleCallback(t); clearTimeout(t) }
   }, [refresh, migrate])
@@ -155,17 +185,43 @@ export function AccountProvider({ children }) {
   }, [status])
 
   const value = useMemo(() => ({
-    status, user, profile, sub, avatarUrl, error,
+    status, user, profile, sub, avatarUrl, error, recovery,
     plan: status === 'in' ? profile?.plan || 'free' : 'free',
+    // Ha una password? (account email; chi entra solo con Google non ce l'ha)
+    hasPassword: !!user?.identities?.some(i => i.provider === 'email') || (user?.app_metadata?.providers || []).includes('email'),
     api, refresh: () => refresh(),
     signInGoogle: async () => {
       const { error: e } = await sb.current.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/' } })
       if (e) throw new Error(e.message)
     },
-    signInEmail: async email => {
-      const { error: e } = await sb.current.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + '/', shouldCreateUser: true } })
-      if (e) throw new Error(e.message.includes('rate') ? 'Troppe richieste: riprova tra qualche minuto.' : e.message)
+    signIn: async (email, password) => {
+      const { error: e } = await sb.current.auth.signInWithPassword({ email, password })
+      if (e) fail(e)
     },
+    // Registrazione: Supabase manda l'email di conferma (modello "Confirm signup")
+    signUp: async (email, password) => {
+      const { data, error: e } = await sb.current.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + '/' } })
+      if (e) fail(e)
+      // Con la conferma email attiva, un'email già registrata torna senza identità (per non rivelare chi è iscritto)
+      if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) fail({ code: 'user_already_exists' })
+      return { needsConfirm: !data?.session }
+    },
+    resendConfirm: async email => {
+      const { error: e } = await sb.current.auth.resend({ type: 'signup', email, options: { emailRedirectTo: location.origin + '/' } })
+      if (e) fail(e)
+    },
+    // Password dimenticata: email con il link (modello "Reset password"), che riporta qui per impostarne una nuova
+    resetPassword: async email => {
+      const { error: e } = await sb.current.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/?reset=1' })
+      if (e) fail(e)
+    },
+    updatePassword: async password => {
+      const { error: e } = await sb.current.auth.updateUser({ password })
+      if (e) fail(e)
+      setRecovery(false)
+      if (/[?&]reset=1/.test(location.search)) history.replaceState(history.state, '', location.pathname)
+    },
+    endRecovery: () => setRecovery(false),
     signOut: async () => { await sb.current.auth.signOut() },
     updateName: async name => {
       const { error: e } = await sb.current.from('profiles').update({ name: name.trim().slice(0, 60) || null }).eq('id', uidRef.current)
@@ -204,7 +260,7 @@ export function AccountProvider({ children }) {
       remove_local_account(uidRef.current)
       await sb.current.auth.signOut({ scope: 'local' }).catch(() => null)
     },
-  }), [status, user, profile, sub, avatarUrl, error, api, refresh])
+  }), [status, user, profile, sub, avatarUrl, error, recovery, api, refresh])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

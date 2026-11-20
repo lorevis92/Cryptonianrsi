@@ -68,6 +68,7 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
             <button key={id} className={'seg__btn' + (view === id ? ' is-on' : '')} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>
           ))}
         </div>
+        <span className="map__status map__status--bar">{status || ' '}</span>
         <button className={'map__legend-btn' + (legend ? ' is-on' : '')} aria-expanded={legend} aria-controls="legenda" onClick={() => setLegend(v => !v)}>
           Legenda<Icon name="chevron" size={14} />
         </button>

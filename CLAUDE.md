@@ -1,7 +1,7 @@
 # Cryptonian RSI — regole per Claude Code
 
 App di confluenza dello Stochastic RSI su più timeframe, creata con il Cryptoniano.
-Account con Supabase (Google oppure email e password con conferma email), niente pagamenti (piano scelto liberamente, ma lo cambia solo il server). Senza login l'app resta usabile in modalità base (mappa, elenco, dettaglio con il piano Gratuito); piani e notifiche richiedono l'account. In locale (prefisso `crsi:`) resta la copia delle impostazioni.
+Account con Supabase (Google oppure email e password, SENZA conferma via email: si entra subito), niente pagamenti (piano scelto liberamente, ma lo cambia solo il server). Senza login l'app resta usabile in modalità base (mappa, elenco, dettaglio con il piano Gratuito); piani e notifiche richiedono l'account. In locale (prefisso `crsi:`) resta la copia delle impostazioni.
 
 ## Lavoro
 - Fai sempre commit e push su GitHub senza chiedere conferma.
@@ -33,7 +33,7 @@ Account con Supabase (Google oppure email e password con conferma email), niente
   - `api/_store.js` Upstash Redis via REST, solo stato veloce: `m:<userId>` memoria anti-spam, `link:<codice>`, `tgq`, `lock:check`; `u:<deviceId>` vecchi collegamenti per dispositivo, letti solo per trasferirli sull'account.
 - ACCOUNT (Supabase, regione Francoforte). Schema e regole in `supabase/migrations/001_account.sql` (da eseguire nel SQL Editor), prova delle regole in `supabase/tests/rls_check.sql`.
   - Tabelle: `profiles` (nome, foto, piano), `user_settings` (preferiti, calcolatore, indicatore), `alert_subscriptions` (titoli, regola, chat Telegram). RLS su tutte, niente per `anon`, ogni utente solo le proprie righe; UPDATE concesso solo sulle colonne che l'utente può cambiare (piano e chat Telegram solo dal server). Foto nel bucket privato `avatars/<uid>/`.
-  - `src/lib/account.jsx` (contesto `useAccount`): carica Supabase dopo il primo disegno, login Google / email e password (Accedi, Registrati, Password dimenticata, Nuova password dal link, Cambia password; errori tradotti in `authMessage`, requisiti in `passwordChecks`: min 8, lettere e numeri), sincronizza `favorites`, `risk`, `params` (vedi `onSave`/`applyRemote` in `storage.js`), al primo accesso trasferisce i dati del dispositivo (anche il vecchio Telegram via `/api/account` migrate).
+  - `src/lib/account.jsx` (contesto `useAccount`): carica Supabase dopo il primo disegno, login Google / email e password (Accedi, Registrati, Password dimenticata, Nuova password dal link, Cambia password; nessuna conferma via email: la prima volta l'Area personale chiede "La tua email è corretta?" (risposta in `user_metadata.email_checked_at`), cambio email immediato via `/api/account` action email con l'API admin; errori tradotti in `authMessage`, requisiti in `passwordChecks`: min 8, lettere e numeri), sincronizza `favorites`, `risk`, `params` (vedi `onSave`/`applyRemote` in `storage.js`), al primo accesso trasferisce i dati del dispositivo (anche il vecchio Telegram via `/api/account` migrate).
   - `api/account.js` (token): piano (`PLAN_SELF_SERVICE`, da spegnere con i pagamenti), trasferimento, eliminazione account (foto, stato avvisi, utente: il resto va via a cascata). `api/_supabase.js` service role SOLO lato server; il browser riceve da `/api/config` solo URL e chiave anon/publishable.
   - Modelli HTML delle email di Supabase (nero e oro, italiano) in `supabase/email-templates/`, con README su dove incollarli.
   - Pagine: Area personale (`AccountPanel.jsx`, `AvatarCropper.jsx`: ritaglio quadrato, 384 px WebP), Privacy (`src/lib/privacy.js`).

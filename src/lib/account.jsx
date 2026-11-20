@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { load, save, onSave, applyRemote } from './storage.js'
 import { DEFAULT_RULE } from '../alerts/rules.js'
 
-// Account utente con Supabase Auth: Google oppure email e password (con conferma dell'email).
+// Account utente con Supabase Auth: Google oppure email e password. Nessuna conferma via email:
+// dopo la registrazione si entra subito; l'email la controlla l'utente nell'Area personale ("La tua email è corretta?").
 // - La libreria di Supabase si carica dopo il primo disegno: la mappa resta istantanea.
 // - Il browser usa solo URL e chiave anon/publishable (da /api/config): i dati sono protetti dalla RLS.
 // - Profilo, impostazioni e notifiche si leggono e scrivono direttamente (solo le proprie righe);
@@ -26,7 +27,6 @@ export const passwordChecks = pw => [
 export function authMessage(e) {
   const code = e?.code || '', msg = (e?.message || '').toLowerCase()
   if (code === 'invalid_credentials' || msg.includes('invalid login credentials')) return 'Email o password non corrette.'
-  if (code === 'email_not_confirmed' || msg.includes('email not confirmed')) return "Devi ancora confermare l'email: apri il link che ti abbiamo mandato (guarda anche nella posta indesiderata)."
   if (code === 'user_already_exists' || code === 'email_exists' || msg.includes('already registered')) return 'Questa email è già registrata: accedi, oppure recupera la password.'
   if (code === 'weak_password' || msg.includes('password should')) return 'Password troppo debole: almeno 8 caratteri, con lettere e numeri.'
   if (code === 'same_password') return 'La nuova password deve essere diversa da quella attuale.'
@@ -198,17 +198,29 @@ export function AccountProvider({ children }) {
       const { error: e } = await sb.current.auth.signInWithPassword({ email, password })
       if (e) fail(e)
     },
-    // Registrazione: Supabase manda l'email di conferma (modello "Confirm signup")
+    // Registrazione: si entra subito (in Supabase "Confirm email" è spento)
     signUp: async (email, password) => {
-      const { data, error: e } = await sb.current.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + '/' } })
+      const { data, error: e } = await sb.current.auth.signUp({ email, password })
       if (e) fail(e)
-      // Con la conferma email attiva, un'email già registrata torna senza identità (per non rivelare chi è iscritto)
       if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) fail({ code: 'user_already_exists' })
-      return { needsConfirm: !data?.session }
+      // Se Supabase chiedesse ancora la conferma non ci sarebbe la sessione: entro con la password appena scelta
+      if (!data?.session) {
+        const { error: e2 } = await sb.current.auth.signInWithPassword({ email, password })
+        if (e2) fail(e2)
+      }
     },
-    resendConfirm: async email => {
-      const { error: e } = await sb.current.auth.resend({ type: 'signup', email, options: { emailRedirectTo: location.origin + '/' } })
+    // "La tua email è corretta?": risposta salvata sull'account (metadati dell'utente)
+    emailChecked: !!user?.user_metadata?.email_checked_at,
+    confirmEmail: async () => {
+      const { data, error: e } = await sb.current.auth.updateUser({ data: { email_checked_at: new Date().toISOString() } })
       if (e) fail(e)
+      if (data?.user) setUser(data.user)
+    },
+    // Cambio email senza conferma: lo fa il server con i permessi di amministratore
+    changeEmail: async email => {
+      await api('/api/account', { action: 'email', email })
+      const { data } = await sb.current.auth.refreshSession()
+      if (data?.user) setUser(data.user)
     },
     // Password dimenticata: email con il link (modello "Reset password"), che riporta qui per impostarne una nuova
     resetPassword: async email => {

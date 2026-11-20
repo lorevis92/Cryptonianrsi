@@ -7,6 +7,7 @@ import { PLANS } from '../src/lib/plans.js'
 // Operazioni dell'account che l'utente non può fare da sé con la RLS (le fa il server, solo per sé stesso):
 //   POST { action: 'plan', plan }          cambia piano (prototipo: libero, senza pagamento)
 //   POST { action: 'migrate', deviceId, plan }  porta sull'account il vecchio collegamento Telegram del dispositivo
+//   POST { action: 'email', email }        cambia email subito, senza conferma via email (scelta del progetto)
 //   POST { action: 'delete' }              elimina account, dati, foto e stato degli avvisi
 // Autenticazione: Authorization: Bearer <token di accesso Supabase>.
 
@@ -76,6 +77,21 @@ export default async function handler(req, res) {
         }
       }
       return res.status(200).json(out)
+    }
+
+    if (action === 'email') {
+      const email = String(req.body.email || '').trim().toLowerCase()
+      if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.status(400).json({ error: "Controlla l'indirizzo email." })
+      if (email === (user.email || '').toLowerCase()) return res.status(200).json({ email })
+      const { error } = await db().auth.admin.updateUserById(uid, {
+        email, email_confirm: true,
+        user_metadata: { ...(user.user_metadata || {}), email_checked_at: new Date().toISOString() },
+      })
+      if (error) {
+        if (error.code === 'email_exists' || /already|registered|exists/i.test(error.message)) return res.status(409).json({ error: 'Questa email è già usata da un altro account.' })
+        throw new Error(error.message)
+      }
+      return res.status(200).json({ email })
     }
 
     if (action === 'delete') {

@@ -16,3 +16,7 @@ incolla tutto il file nel campo "Message body" (scheda Source) e salva.
 Variabili di Supabase usate: `{{ .ConfirmationURL }}`, `{{ .Email }}`, `{{ .NewEmail }}`, `{{ .SiteURL }}`
 (il Site URL deve essere l'indirizzo pubblico dell'app, così i link a /privacy e /termini funzionano).
 Il modello "Magic Link" non serve più: l'app non usa più l'accesso con link.
+
+Con le impostazioni attuali ("Confirm email" e "Secure email change" spenti) Supabase NON manda né la conferma
+della registrazione né quella del cambio email: servono solo **Reset password** e, se inviti utenti, **Invite user**.
+Gli altri due modelli restano qui pronti nel caso un giorno si riattivi la conferma.

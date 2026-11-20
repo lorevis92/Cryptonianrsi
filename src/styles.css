@@ -564,3 +564,15 @@ p { margin: 0; }
 .account__pw .field, .account form .field { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border: 1px solid var(--gold-line); border-radius: var(--r-ctl); color: var(--gold); }
 .account__pw .field input, .account form .field input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font-size: 16px; color: var(--ivory); }
 .account__sent .legal-link { justify-self: start; }
+
+/* Controllo dell'email (al posto della conferma via email) */
+.email-check { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--gold-line); border-radius: 14px; background: linear-gradient(180deg, rgba(200, 169, 106, .06), rgba(200, 169, 106, 0)); animation: fade .3s both; }
+.email-check__q { font-family: var(--serif); font-size: 17px; color: var(--gold-light); }
+.email-check__mail { font-size: 15px; color: var(--ivory); overflow-wrap: anywhere; }
+.email-check__edit { border-color: var(--hair); color: var(--ivory); }
+.email-check .field { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border: 1px solid var(--gold-line); border-radius: var(--r-ctl); color: var(--gold); }
+.email-check .field input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font-size: 16px; color: var(--ivory); }
+.account__email-line { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.account__email-line span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account__email-line .legal-link { flex: none; font-size: 12.5px; }
+@media (prefers-reduced-motion: reduce) { .email-check { animation: none; } }

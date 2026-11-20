@@ -46,40 +46,36 @@ export function Login({ onPrivacy, lead }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [done, setDone] = useState(null) // { kind: 'confirm' | 'reset', email }
+  const [sent, setSent] = useState(null) // email a cui è partito il link per la nuova password
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const [unconfirmed, setUnconfirmed] = useState(false)
   const mail = email.trim()
-  const go = m => { setMode(m); setError(null); setUnconfirmed(false); setPassword(''); setConfirm('') }
+  const go = m => { setMode(m); setError(null); setPassword(''); setConfirm('') }
 
   const run = async fn => {
-    setBusy(true); setError(null); setUnconfirmed(false)
-    try { await fn() } catch (e) { setError(e.message); setUnconfirmed(e.code === 'email_not_confirmed') }
+    setBusy(true); setError(null)
+    try { await fn() } catch (e) { setError(e.message) }
     setBusy(false)
   }
   const google = () => run(acc.signInGoogle)
   const submit = e => {
     e.preventDefault()
     if (mode === 'in') run(() => acc.signIn(mail, password))
-    if (mode === 'up') run(async () => { const r = await acc.signUp(mail, password); if (r.needsConfirm) setDone({ kind: 'confirm', email: mail }) })
-    if (mode === 'forgot') run(async () => { await acc.resetPassword(mail); setDone({ kind: 'reset', email: mail }) })
+    if (mode === 'up') run(() => acc.signUp(mail, password)) // si entra subito
+    if (mode === 'forgot') run(async () => { await acc.resetPassword(mail); setSent(mail) })
   }
   const canSubmit = EMAIL_RE.test(mail) && !busy && acc.status !== 'loading' && (
     mode === 'in' ? password.length > 0 : mode === 'up' ? passwordOk(password, confirm) : true)
 
   if (acc.status === 'off') return <p className="hint">Gli account non sono ancora attivi su questo server.</p>
 
-  if (done) return (
+  if (sent) return (
     <div className="account">
       <div className="account__sent" role="status">
-        {done.kind === 'confirm'
-          ? <><p>Ti abbiamo mandato un'email a <b>{done.email}</b>.</p><p className="hint">Apri il link per confermare l'indirizzo: poi entri direttamente. Non arriva? Guarda nella posta indesiderata.</p></>
-          : <><p>Se <b>{done.email}</b> è registrata, ti abbiamo mandato un link per scegliere una nuova password.</p><p className="hint">Il link vale un'ora. Non arriva? Guarda nella posta indesiderata.</p></>}
-        {done.kind === 'confirm' && <button className="legal-link" onClick={() => run(() => acc.resendConfirm(done.email))} disabled={busy}>Invia di nuovo l'email</button>}
-        <button className="legal-link" onClick={() => { setDone(null); go('in') }}>Torna ad Accedi</button>
+        <p>Se <b>{sent}</b> è registrata, ti abbiamo mandato un link per scegliere una nuova password.</p>
+        <p className="hint">Il link vale un'ora. Non arriva? Guarda nella posta indesiderata.</p>
+        <button className="legal-link" onClick={() => { setSent(null); go('in') }}>Torna ad Accedi</button>
       </div>
-      {error && <p className="hint risk__warn">{error}</p>}
     </div>
   )
 
@@ -113,7 +109,6 @@ export function Login({ onPrivacy, lead }) {
         </button>
       </form>
       {error && <p className="hint risk__warn" role="alert">{error}</p>}
-      {unconfirmed && <button className="legal-link account__link" onClick={() => run(async () => { await acc.resendConfirm(mail); setDone({ kind: 'confirm', email: mail }) })}>Invia di nuovo l'email di conferma</button>}
 
       {mode === 'in' && <button className="legal-link account__link" onClick={() => go('forgot')}>Password dimenticata?</button>}
       {mode === 'forgot' && <button className="legal-link account__link" onClick={() => go('in')}>Torna ad Accedi</button>}
@@ -185,6 +180,7 @@ function Profile({ onPlans, onNotify }) {
   const [error, setError] = useState(null)
   const [confirm, setConfirm] = useState(false)
   const [pwOpen, setPwOpen] = useState(false)
+  const [editEmail, setEditEmail] = useState(false)
   const input = useRef()
   useEffect(() => setName(acc.profile?.name || ''), [acc.profile?.name])
 
@@ -214,9 +210,11 @@ function Profile({ onPlans, onNotify }) {
             <input value={name} maxLength={60} placeholder="Il tuo nome" onChange={e => setName(e.target.value)} onBlur={saveName}
               onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
           </label>
-          <p className="account__email-line">{acc.user?.email}</p>
+          <p className="account__email-line"><span>{acc.user?.email}</span>{acc.emailChecked && !editEmail && <button className="legal-link" onClick={() => setEditEmail(true)}>Modifica</button>}</p>
         </div>
       </div>
+      {/* La prima volta: l'utente controlla la sua email (non c'è conferma via email) */}
+      {(editEmail || !acc.emailChecked) && <EmailCheck editing={editEmail} onEdit={() => setEditEmail(true)} onDone={() => setEditEmail(false)} />}
       {acc.avatarUrl && <button className="legal-link account__rm" onClick={() => run(acc.removeAvatar)} disabled={busy}>Togli la foto</button>}
 
       <dl className="account__facts">
@@ -257,6 +255,42 @@ function Profile({ onPlans, onNotify }) {
       </div>
       {error && <p className="hint risk__warn">{error}</p>}
     </div>
+  )
+}
+
+// "La tua email è corretta?" · Sì, è corretta / Modifica (cambio immediato, senza conferma via email)
+function EmailCheck({ editing, onEdit, onDone }) {
+  const acc = useAccount()
+  const [email, setEmail] = useState(acc.user?.email || '')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const run = async fn => { setBusy(true); setError(null); try { await fn(); onDone() } catch (e) { setError(e.message) } setBusy(false) }
+  const valid = EMAIL_RE.test(email.trim())
+  if (!editing) return (
+    <div className="email-check" role="group" aria-label="Controllo dell'email">
+      <p className="email-check__q">La tua email è corretta?</p>
+      <p className="email-check__mail">{acc.user?.email}</p>
+      <div className="account__confirm">
+        <button className="btn btn--ghost" onClick={() => run(acc.confirmEmail)} disabled={busy}>Sì, è corretta</button>
+        <button className="btn btn--ghost email-check__edit" onClick={onEdit} disabled={busy}>Modifica</button>
+      </div>
+      {error && <p className="hint risk__warn" role="alert">{error}</p>}
+    </div>
+  )
+  return (
+    <form className="email-check" onSubmit={e => { e.preventDefault(); if (valid) run(() => acc.changeEmail(email.trim())) }} noValidate>
+      <p className="email-check__q">Correggi la tua email</p>
+      <label className="field">
+        <Icon name="mail" size={16} />
+        <input type="email" inputMode="email" autoComplete="email" aria-label="Email" value={email} onChange={e => setEmail(e.target.value)} autoFocus />
+      </label>
+      <div className="account__confirm">
+        <button type="button" className="btn btn--ghost" onClick={onDone} disabled={busy}>Annulla</button>
+        <button type="submit" className="btn btn--ghost" disabled={!valid || busy}>{busy ? 'Salvo…' : 'Salva'}</button>
+      </div>
+      {acc.hasPassword && <p className="hint">D'ora in poi accedi con la nuova email e la password di sempre.</p>}
+      {error && <p className="hint risk__warn" role="alert">{error}</p>}
+    </form>
   )
 }
 

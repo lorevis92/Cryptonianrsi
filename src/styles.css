@@ -602,3 +602,24 @@ p { margin: 0; }
 .auth-notice .legal-link { justify-self: start; font-size: 13px; }
 .auth-notice__btn { justify-self: stretch; margin-top: 2px; }
 @media (prefers-reduced-motion: reduce) { .auth-notice { animation: none; } }
+
+/* Barra della mappa: Bolle/Elenco · filtro · Legenda (in fondo a destra). Su telefono una sola riga:
+   vista e Legenda come icone, il filtro prende lo spazio che resta */
+.map__bar .seg--filter { order: 0; }
+.map__bar .map__legend-btn { order: 1; margin-left: auto; }
+.seg__btn--view { display: inline-flex; align-items: center; gap: 6px; }
+.seg__icon { display: none; }
+.map__legend-icon { display: none; }
+.map__notice { position: absolute; z-index: 4; top: 8px; left: 50%; transform: translateX(-50%); margin: 0; padding: 6px 12px; border: 1px solid var(--gold-line); border-radius: 999px; background: rgba(14, 16, 22, .9); font-size: 12px; color: var(--muted); white-space: nowrap; }
+@media (max-width: 979px) {
+  .map__bar { flex-wrap: nowrap; gap: 8px; padding-bottom: 8px; }
+  .seg__btn--view { padding: 0 8px; }
+  .seg__btn--view .seg__text { display: none; }
+  .seg__icon { display: inline-grid; }
+  .map__bar .seg--filter { flex: 1 1 auto; width: auto; min-width: 0; }
+  .map__bar .seg--filter .seg__btn { flex: 1 1 auto; min-width: 0; padding: 0 5px; font-size: 12.5px; }
+  .map__bar .map__legend-btn { flex: none; width: 32px; padding: 0; justify-content: center; margin-left: 0; }
+  .map__legend-text, .map__bar .map__legend-btn > svg:last-child { display: none; }
+  .map__legend-icon { display: inline-grid; }
+}
+@media (max-width: 360px) { .map__bar .seg--filter .seg__btn { padding: 0 3px; font-size: 12px; } .map__bar { gap: 6px; } }

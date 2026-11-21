@@ -19,11 +19,13 @@ export function DisclaimerGate({ onAccept, onRead }) {
   )
 }
 
-// Riga discreta in fondo alla home e al dettaglio
-export function LegalLine({ onOpen }) {
+// Riga discreta in fondo alla home e al dettaglio: l'unico accesso a Note legali e Privacy (oltre agli indirizzi diretti)
+export function LegalLine({ onTerms, onPrivacy }) {
   return (
     <p className="legal-line">
-      {DISCLAIMER_SHORT} <button className="legal-link" onClick={onOpen}>Note legali</button>
+      {DISCLAIMER_SHORT} <a className="legal-link" href="/termini" onClick={e => { e.preventDefault(); onTerms() }}>Note legali</a>
+      <span aria-hidden="true"> · </span>
+      <a className="legal-link" href="/privacy" onClick={e => { e.preventDefault(); onPrivacy() }}>Privacy</a>
     </p>
   )
 }

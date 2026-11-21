@@ -12,17 +12,7 @@ import { ZONE_LABEL, STRONG_LABEL, ATTENTION_LABEL, signalLabel } from '../lib/f
 import { load, save } from '../lib/storage.js'
 
 const FILTERS = [['all', 'Tutti'], ['oversold', 'Ipervenduto'], ['overbought', 'Ipercomprato']]
-const VIEWS = [['bubbles', 'Bolle'], ['list', 'Elenco']]
-// "aggiornato 3 min fa"
-function ago(ms) {
-  const m = Math.floor(ms / 60e3)
-  if (m < 1) return 'adesso'
-  if (m < 60) return `${m} min fa`
-  const h = Math.floor(m / 60)
-  if (h < 24) return h === 1 ? "un'ora fa" : `${h} ore fa`
-  const d = Math.floor(h / 24)
-  return d === 1 ? 'ieri' : `${d} giorni fa`
-}
+const VIEWS = [['bubbles', 'Bolle', 'bubbles'], ['list', 'Elenco', 'list']]
 const fmtW = w => String(w).replace('.', ',')
 const listJoin = a => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} o ${a[a.length - 1]}`)
 
@@ -34,10 +24,7 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
   useEffect(() => save('mapView', view), [view])
   useEffect(() => save('mapFilter', filter), [filter])
 
-  const { tails, symbols, loaded, error, at } = useScan(favorites, params)
-  // Orologio per "aggiornato X min fa"
-  const [now, setNow] = useState(Date.now())
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30e3); return () => clearInterval(t) }, [])
+  const { tails, symbols, loaded, error } = useScan(favorites, params)
 
   const rows = useMemo(() => symbols.map((s, rank) => ({ ...bubbleData(s, alignment(tails[s], params)), trend: tails[s]?.[MAIN_TREND_TF]?.t, rank })), [tails, symbols, params])
 
@@ -56,27 +43,27 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
     if (view === 'list') hlRow.current?.scrollIntoView({ block: 'center' })
   }, [view, highlight, !!hl]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const status = !loaded ? (error ? 'Bitunix non risponde, riprovo tra poco.' : null)
-    : loaded < TIMEFRAMES.length && !at ? `Sto leggendo i timeframe: ${loaded} di ${TIMEFRAMES.length}`
-    : at ? `Aggiornato ${ago(Math.max(0, now - at))}${error ? ' · nuovo tentativo tra poco' : ''}` : null
+  // Niente "Aggiornato X min fa": solo un avviso discreto sopra la mappa se Bitunix non risponde
+  const notice = !loaded && error ? 'Bitunix non risponde, riprovo tra poco.' : null
 
   return (
     <section className="map" aria-label="Mappa dell'allineamento">
       <div className="map__bar">
         <div className="seg" role="group" aria-label="Vista">
-          {VIEWS.map(([id, label]) => (
-            <button key={id} className={'seg__btn' + (view === id ? ' is-on' : '')} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>
+          {VIEWS.map(([id, label, icon]) => (
+            <button key={id} className={'seg__btn seg__btn--view' + (view === id ? ' is-on' : '')} aria-pressed={view === id} aria-label={label} title={label} onClick={() => setView(id)}>
+              <span className="seg__icon" aria-hidden="true"><Icon name={icon} size={15} /></span><span className="seg__text">{label}</span>
+            </button>
           ))}
         </div>
-        <span className="map__status map__status--bar">{status || ' '}</span>
-        <button className={'map__legend-btn' + (legend ? ' is-on' : '')} aria-expanded={legend} aria-controls="legenda" onClick={() => setLegend(v => !v)}>
-          Legenda<Icon name="chevron" size={14} />
-        </button>
         <div className="seg seg--filter" role="group" aria-label="Filtro">
           {FILTERS.map(([id, label]) => (
             <button key={id} className={`seg__btn is-${id}` + (filter === id ? ' is-on' : '')} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>
           ))}
         </div>
+        <button className={'map__legend-btn' + (legend ? ' is-on' : '')} aria-expanded={legend} aria-controls="legenda" aria-label="Legenda" title="Legenda" onClick={() => setLegend(v => !v)}>
+          <span className="map__legend-icon" aria-hidden="true"><Icon name="info" size={17} /></span><span className="map__legend-text">Legenda</span><Icon name="chevron" size={14} />
+        </button>
       </div>
 
       {legend && (
@@ -114,10 +101,10 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
         </div>
       )}
 
-      <p className="map__status">{status || ' '}</p>
 
       {view === 'bubbles' ? (
         <div className="map__stage">
+          {notice && <p className="map__notice" role="status">{notice}</p>}
           <BubbleCanvas items={items} highlight={highlight} onPick={onOpen} onBlank={onClearHighlight} label={`Mappa a bolle di ${items.filter(i => i.visible).length} titoli. Per leggerli uno per uno usa la vista Elenco.`} />
           {!rows.length && <p className="map__empty">Sto leggendo il mercato…</p>}
           {rows.length > 0 && loaded > 0 && !ranked.length && <p className="map__empty">Nessun titolo in {filter === 'oversold' ? 'ipervenduto' : 'ipercomprato'} adesso.</p>}

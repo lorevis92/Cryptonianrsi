@@ -10,6 +10,7 @@ import NotifyPanel from './components/NotifyPanel.jsx'
 import RiskPanel from './components/RiskPanel.jsx'
 import { DisclaimerGate, LegalLine } from './components/Legal.jsx'
 import { goTo, PATH_OF } from './lib/route.js'
+import { INDICATOR_SETTINGS } from './lib/features.js'
 import AccountPanel from './components/AccountPanel.jsx'
 import { useAccount } from './lib/account.jsx'
 import { DISCLAIMER_VERSION } from './lib/legal.js'
@@ -26,14 +27,16 @@ import { load, save, onRemote } from './lib/storage.js'
 
 // Note legali e Privacy sono pagine pubbliche con indirizzo diretto (/termini, /privacy): il menu porta lì
 const PAGE_OF_MENU = { legal: 'terms', privacy: 'privacy' }
-const MENU = [['account', 'Account'], ['plan', 'Il tuo piano'], ['indicator', 'Indicatore'], ['notify', 'Notifiche'], ['legal', 'Note legali'], ['privacy', 'Privacy']]
+// Note legali e Privacy si aprono dal footer (e dai loro indirizzi diretti); l'Indicatore è nascosto (lib/features.js)
+const MENU = [['account', 'Account'], ['plan', 'Il tuo piano'], ...(INDICATOR_SETTINGS ? [['indicator', 'Indicatore']] : []), ['notify', 'Notifiche']]
 
 export default function App() {
   const [symbol, setSymbol] = useState(() => load('symbol', 'BTCUSDT'))
   // Il piano sta sull'account (senza login: Gratuito)
   const account = useAccount()
   const plan = account.plan
-  const [params, setParams] = useState(() => ({ ...DEFAULTS, ...load('params', {}) }))
+  // Parametri dell'indicatore: con la pagina Indicatore spenta valgono per tutti quelli classici
+  const [params, setParams] = useState(() => (INDICATOR_SETTINGS ? { ...DEFAULTS, ...load('params', {}) } : DEFAULTS))
   const [states, setStates] = useState({})
   const [sheet, setSheet] = useState(null)
   const [favorites, toggleFavorite] = useFavorites()
@@ -80,8 +83,8 @@ export default function App() {
   useEffect(() => { if (account.recovery) setSheet('account') }, [account.recovery])
 
   // Impostazioni dell'indicatore arrivate dall'account
-  useEffect(() => onRemote(['params'], () => setParams({ ...DEFAULTS, ...load('params', {}) })), [])
-  useEffect(() => save('params', params), [params])
+  useEffect(() => (INDICATOR_SETTINGS ? onRemote(['params'], () => setParams({ ...DEFAULTS, ...load('params', {}) })) : undefined), [])
+  useEffect(() => { if (INDICATOR_SETTINGS) save('params', params) }, [params])
   useEffect(() => setStates({}), [symbol])
   // Il chip del titolo attivo resta in vista nella fila dei preferiti
   useEffect(() => {
@@ -160,7 +163,7 @@ export default function App() {
 
       {view === 'map' ? (
         <BubbleMap favorites={favorites} params={params} onOpen={openSymbol} highlight={highlight} onClearHighlight={() => setHighlight(null)}
-          footer={<LegalLine onOpen={openTerms} />} />
+          footer={<LegalLine onTerms={openTerms} onPrivacy={openPrivacy} />} />
       ) : (
         <main className="layout">
           <aside className="layout__side">
@@ -173,7 +176,7 @@ export default function App() {
               </CardBoundary>
             ))}
           </div>
-          <div className="layout__legal"><LegalLine onOpen={openTerms} /></div>
+          <div className="layout__legal"><LegalLine onTerms={openTerms} onPrivacy={openPrivacy} /></div>
         </main>
       )}
 
@@ -186,7 +189,7 @@ export default function App() {
         )}
         {sheet === 'account' && <AccountPanel onPlans={() => setSheet('plan')} onNotify={() => setSheet('notify')} onPrivacy={openPrivacy} />}
         {sheet === 'plan' && <PlanPanel onLogin={() => setSheet('account')} />}
-        {sheet === 'indicator' && <IndicatorPanel params={params} onChange={setParams} />}
+        {INDICATOR_SETTINGS && sheet === 'indicator' && <IndicatorPanel params={params} onChange={setParams} />}
         {sheet === 'notify' && <NotifyPanel onUpgrade={() => setSheet('plan')} onPrivacy={openPrivacy} />}
         {sheet === 'risk' && <RiskPanel symbol={symbol} />}
       </Sheet>

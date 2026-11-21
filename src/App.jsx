@@ -12,6 +12,7 @@ import { DisclaimerGate, LegalLine } from './components/Legal.jsx'
 import { goTo, PATH_OF } from './lib/route.js'
 import { INDICATOR_SETTINGS } from './lib/features.js'
 import AccountPanel from './components/AccountPanel.jsx'
+import ExchangesPanel from './components/ExchangesPanel.jsx'
 import { useAccount } from './lib/account.jsx'
 import { DISCLAIMER_VERSION } from './lib/legal.js'
 import CardBoundary from './components/CardBoundary.jsx'
@@ -28,7 +29,7 @@ import { load, save, onRemote } from './lib/storage.js'
 // Note legali e Privacy sono pagine pubbliche con indirizzo diretto (/termini, /privacy): il menu porta lì
 const PAGE_OF_MENU = { legal: 'terms', privacy: 'privacy' }
 // Note legali e Privacy si aprono dal footer (e dai loro indirizzi diretti); l'Indicatore è nascosto (lib/features.js)
-const MENU = [['account', 'Account'], ['plan', 'Il tuo piano'], ...(INDICATOR_SETTINGS ? [['indicator', 'Indicatore']] : []), ['notify', 'Notifiche']]
+const MENU = [['account', 'Account'], ['plan', 'Il tuo piano'], ...(INDICATOR_SETTINGS ? [['indicator', 'Indicatore']] : []), ['notify', 'Notifiche'], ['exchanges', 'Exchange consigliati']]
 
 export default function App() {
   const [symbol, setSymbol] = useState(() => load('symbol', 'BTCUSDT'))
@@ -116,7 +117,7 @@ export default function App() {
   const openTerms = useCallback(() => openPage('terms'), [openPage])
   const openPrivacy = useCallback(() => openPage('privacy'), [openPage])
 
-  const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', notify: 'Notifiche', legal: 'Note legali', privacy: 'Privacy', risk: 'Calcola il rischio', account: account.status === 'in' ? 'Area personale' : 'Accedi' }
+  const titles = { symbol: 'Scegli il titolo', menu: 'Menu', plan: 'Il tuo piano', indicator: 'Indicatore', notify: 'Notifiche', legal: 'Note legali', privacy: 'Privacy', risk: 'Calcola il rischio', exchanges: 'Exchange consigliati', account: account.status === 'in' ? 'Area personale' : 'Accedi' }
 
   return (
     <div className={'app is-' + view}>
@@ -192,6 +193,7 @@ export default function App() {
         {INDICATOR_SETTINGS && sheet === 'indicator' && <IndicatorPanel params={params} onChange={setParams} />}
         {sheet === 'notify' && <NotifyPanel onUpgrade={() => setSheet('plan')} onPrivacy={openPrivacy} />}
         {sheet === 'risk' && <RiskPanel symbol={symbol} />}
+        {sheet === 'exchanges' && <ExchangesPanel />}
       </Sheet>
       {!accepted && <DisclaimerGate onAccept={accept} onRead={openTerms} />}
     </div>

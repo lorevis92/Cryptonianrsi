@@ -623,3 +623,15 @@ p { margin: 0; }
   .map__legend-icon { display: inline-grid; }
 }
 @media (max-width: 360px) { .map__bar .seg--filter .seg__btn { padding: 0 3px; font-size: 12px; } .map__bar { gap: 6px; } }
+
+/* ---------- Exchange consigliati ---------- */
+.exchanges { display: grid; gap: 14px; }
+.exchanges__intro { color: var(--ivory); }
+.exchange { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--gold-line); border-radius: var(--r-card); background: linear-gradient(180deg, rgba(200, 169, 106, .06), rgba(200, 169, 106, 0) 60%), var(--graphite-2); }
+.exchange__name { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 26px; line-height: 1; color: var(--gold-light); letter-spacing: .01em; }
+.exchange__points { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 14px; color: var(--muted); }
+.exchange__points li { position: relative; padding-left: 16px; }
+.exchange__points li::before { content: ''; position: absolute; left: 2px; top: .62em; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+.exchange__cta { display: inline-grid; place-items: center; height: 44px; text-decoration: none; background: var(--gold); color: var(--ink); font-weight: 600; transition: background-color .2s; }
+.exchange__cta:hover { background: var(--gold-light); }
+.exchanges__note { margin-top: 4px; font-size: 11.5px; line-height: 1.5; color: var(--muted-2); }

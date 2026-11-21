@@ -27,6 +27,8 @@ function local([cmd, ...a]) {
       return 'OK'
     }
     case 'DEL': return a.reduce((n, k) => n + (mem.delete(k) ? 1 : 0), 0)
+    case 'INCR': { const v = Number(mem.get(a[0]) || 0) + 1; mem.set(a[0], String(v)); return v }
+    case 'EXPIRE': exp.set(a[0], now + Number(a[1]) * 1000); return 1
     case 'SADD': { const s = set(a[0]); a.slice(1).forEach(v => s.add(v)); return 1 }
     case 'SREM': { const s = set(a[0]); a.slice(1).forEach(v => s.delete(v)); return 1 }
     case 'SMEMBERS': return [...set(a[0])]

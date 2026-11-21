@@ -49,21 +49,61 @@ export function Login({ onPrivacy, lead }) {
   const [sent, setSent] = useState(null) // email a cui è partito il link per la nuova password
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [notice, setNotice] = useState(null) // 'none' (email sconosciuta) · 'password' (password errata) · 'google' (account solo Google)
   const mail = email.trim()
-  const go = m => { setMode(m); setError(null); setPassword(''); setConfirm('') }
+  const go = m => { setMode(m); setError(null); setNotice(null); setPassword(''); setConfirm('') }
 
   const run = async fn => {
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setNotice(null)
     try { await fn() } catch (e) { setError(e.message) }
     setBusy(false)
+  }
+  // Che tipo di account c'è dietro questa email (verifica sul server, con limite di tentativi)
+  const explain = async () => {
+    const st = await acc.checkEmail(mail)
+    if (!st) return null
+    if (!st.exists) return 'none'
+    if (!st.password && st.google) return 'google'
+    return 'password'
   }
   const google = () => run(acc.signInGoogle)
   const submit = e => {
     e.preventDefault()
-    if (mode === 'in') run(() => acc.signIn(mail, password))
+    if (mode === 'in') run(async () => {
+      try { await acc.signIn(mail, password) } catch (err) {
+        if (err.code !== 'invalid_credentials' && !/non corrette/.test(err.message)) throw err
+        const why = await explain()
+        if (!why) throw err // non si può sapere (troppi tentativi): messaggio generico
+        setNotice(why)
+      }
+    })
     if (mode === 'up') run(() => acc.signUp(mail, password)) // si entra subito
-    if (mode === 'forgot') run(async () => { await acc.resetPassword(mail); setSent(mail) })
+    if (mode === 'forgot') run(async () => {
+      const why = await explain()
+      if (why === 'none' || why === 'google') { setNotice(why); return }
+      await acc.resetPassword(mail)
+      setSent(mail)
+    })
   }
+  // Messaggi chiari, con l'azione giusta a portata di dito
+  const Notice = () => notice && (
+    <div className={'auth-notice is-' + notice} role="alert">
+      {notice === 'none' && <>
+        <p className="auth-notice__title">Non esiste nessun account con questa email.</p>
+        <p>Controlla di averla scritta correttamente oppure registrati.</p>
+        <button className="btn btn--ghost auth-notice__btn" onClick={() => { const m = email; go('up'); setEmail(m) }}>Registrati</button>
+      </>}
+      {notice === 'password' && <>
+        <p className="auth-notice__title">Password non corretta.</p>
+        <button className="legal-link" onClick={() => go('forgot')}>Password dimenticata?</button>
+      </>}
+      {notice === 'google' && <>
+        <p className="auth-notice__title">Questo account usa l'accesso con Google.</p>
+        <p>Non ha una password: entra con il tuo account Google.</p>
+        <button className="btn btn--ghost account__google auth-notice__btn" onClick={google} disabled={busy}><GoogleMark />Continua con Google</button>
+      </>}
+    </div>
+  )
   const canSubmit = EMAIL_RE.test(mail) && !busy && acc.status !== 'loading' && (
     mode === 'in' ? password.length > 0 : mode === 'up' ? passwordOk(password, confirm) : true)
 
@@ -109,8 +149,9 @@ export function Login({ onPrivacy, lead }) {
         </button>
       </form>
       {error && <p className="hint risk__warn" role="alert">{error}</p>}
+      <Notice />
 
-      {mode === 'in' && <button className="legal-link account__link" onClick={() => go('forgot')}>Password dimenticata?</button>}
+      {mode === 'in' && notice !== 'password' && <button className="legal-link account__link" onClick={() => go('forgot')}>Password dimenticata?</button>}
       {mode === 'forgot' && <button className="legal-link account__link" onClick={() => go('in')}>Torna ad Accedi</button>}
       {mode === 'up' && <p className="hint">Creando l'account accetti le <a className="legal-link" href="/termini">Note legali</a>. {onPrivacy && <button className="legal-link" onClick={onPrivacy}>Privacy</button>}</p>}
     </div>

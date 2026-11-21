@@ -593,3 +593,12 @@ p { margin: 0; }
 .account__email-line span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account__email-line .legal-link { flex: none; font-size: 12.5px; }
 @media (prefers-reduced-motion: reduce) { .email-check { animation: none; } }
+
+/* Messaggi chiari del login (email sconosciuta, password errata, account Google) */
+.auth-notice { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--gold-line); border-radius: 14px; background: var(--graphite-2); font-size: 14px; color: var(--muted); animation: fade .25s both; }
+.auth-notice__title { font-family: var(--serif); font-size: 17px; color: var(--gold-light); }
+.auth-notice.is-password { border-color: rgba(255, 79, 123, .35); }
+.auth-notice.is-password .auth-notice__title { color: var(--ivory); }
+.auth-notice .legal-link { justify-self: start; font-size: 13px; }
+.auth-notice__btn { justify-self: stretch; margin-top: 2px; }
+@media (prefers-reduced-motion: reduce) { .auth-notice { animation: none; } }

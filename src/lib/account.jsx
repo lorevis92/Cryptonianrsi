@@ -194,6 +194,13 @@ export function AccountProvider({ children }) {
       const { error: e } = await sb.current.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/' } })
       if (e) throw new Error(e.message)
     },
+    // Esiste un account con questa email? (dal server, con limite di tentativi). null se non si può sapere.
+    checkEmail: async email => {
+      try {
+        const r = await fetch('/api/auth-check', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }), cache: 'no-store' })
+        return r.ok ? await r.json() : null
+      } catch { return null }
+    },
     signIn: async (email, password) => {
       const { error: e } = await sb.current.auth.signInWithPassword({ email, password })
       if (e) fail(e)

@@ -3,6 +3,9 @@ import { createPortal } from 'react-dom'
 import Chart from './Chart.jsx'
 import Icon from './Icon.jsx'
 import { TrendMark } from './TrendBadge.jsx'
+import TvChart from './TvChart.jsx'
+import { tvSymbol } from '../lib/tvSymbols.js'
+import { TRADINGVIEW_WIDGET } from '../lib/features.js'
 import { useCandles } from '../lib/useCandles.js'
 import { readState } from '../lib/stochrsi.js'
 import { TF_LABEL, planFor } from '../lib/plans.js'
@@ -14,6 +17,8 @@ export default function TimeframeCard({ symbol, tf, unlocked, params, onState, o
   const s = useMemo(() => (bars ? readState(bars, params) : null), [bars, params])
   const [big, setBig] = useState(false)   // computer: card a tutta la riga
   const [full, setFull] = useState(false) // telefono: grafico a tutto schermo
+  const [tvOpen, setTvOpen] = useState(false) // storico completo su TradingView (azioni e materie prime)
+  const tvSym = TRADINGVIEW_WIDGET && (tf === '1d' || tf === '1w') ? tvSymbol(symbol) : null
   const card = useRef()
 
   // Da computer la card si allarga con una transizione; da telefono il grafico sale a tutto schermo.
@@ -60,6 +65,12 @@ export default function TimeframeCard({ symbol, tf, unlocked, params, onState, o
         : bars && !bars.length ? <p className="card__msg">Nessuna candela disponibile per questo titolo.</p>
         : error && !loading ? <p className="card__msg">{error}. Riprovo tra poco.</p>
         : <div className="card__skeleton" aria-label="Caricamento" />}
+      {tvSym && (
+        <div className="card__foot">
+          <button className="card__tv" onClick={() => setTvOpen(true)}>Storico completo<span aria-hidden="true"> · TradingView</span></button>
+        </div>
+      )}
+      {tvOpen && <TvChart tvSymbol={tvSym} tf={tf} name={symbol.replace(/USDT$/, '')} onClose={() => setTvOpen(false)} />}
       {full && bars?.length > 0 && s && (
         <FullChart tf={tf} s={s} bars={bars} ema={ema} precision={precision} params={params} price={last?.c} onClose={() => setFull(false)} />
       )}

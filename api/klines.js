@@ -1,5 +1,6 @@
 import { klinesBack, pricePrecision } from './_bitunix.js'
 import { emaLine } from './_scan.js'
+import { withHistory } from './_history.js'
 
 // Quanto tempo la risposta resta in cache su Vercel, per timeframe (secondi).
 // Così più utenti sullo stesso titolo non moltiplicano le richieste a Bitunix.
@@ -13,7 +14,9 @@ export default async function handler(req, res) {
     return
   }
   try {
-    const bars = await klinesBack(symbol, interval, Math.min(400, Number(limit) || 300))
+    // 1d e 1w delle crypto: tutto lo storico (le candele prima di Bitunix arrivano da Binance/Bybit, salvate sul server)
+    const recent = await klinesBack(symbol, interval, Math.min(400, Number(limit) || 300))
+    const bars = await withHistory(symbol, interval, recent).catch(() => recent)
     // EMA 200 (stessi valori del semaforo) e decimali del prezzo da Bitunix; se mancano, il grafico ne fa a meno
     const [line, precision] = await Promise.all([
       emaLine(symbol, interval, bars).catch(() => null),

@@ -20,7 +20,8 @@ export const PRIVACY = [
   ]],
   ['Dove stanno e chi li tratta', [
     'Account, impostazioni e foto: Supabase, server nell\'Unione europea (Francoforte). App e funzioni: Vercel. Stato veloce degli avvisi: Upstash. Messaggi: Telegram. Email di accesso: il servizio di invio email configurato (per esempio Resend). Accesso con Google: Google.',
-    'I dati di mercato arrivano da Bitunix e non contengono informazioni su di te.',
+    'I dati di mercato arrivano da Bitunix (e, per lo storico lungo delle crypto, da Binance o Bybit) e non contengono informazioni su di te. Il server li scarica senza inviare nulla che ti riguardi.',
+    "Se apri \"Storico completo\" su un'azione o una materia prima, il grafico è caricato direttamente da TradingView, che riceve i dati tecnici della connessione (come l'indirizzo IP) e può usare cookie secondo la sua informativa sulla privacy.",
   ]],
   ['Sicurezza', [
     'Ogni utente può leggere e modificare solo i propri dati: lo garantiscono le regole del database (Row Level Security). Le chiavi di amministrazione restano sul server e non sono mai nell\'app.',

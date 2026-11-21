@@ -2,6 +2,7 @@ import { klines, klinesBack, topSymbols } from './_bitunix.js'
 import { stochRsi, DEFAULTS } from '../src/lib/stochrsi.js'
 import { ema, emaSeries, EMA_LENGTH, EMA_HISTORY } from '../src/lib/trend.js'
 import { redis, hasStore } from './_store.js'
+import { withHistory } from './_history.js'
 
 // Scansione di un timeframe: per ogni titolo una sola richiesta a Bitunix (200 candele)
 // e solo la coda di K e D nel risultato, più il trend rispetto all'EMA 200 (t: 1 sopra, -1 sotto, 0 dati insufficienti).
@@ -55,7 +56,7 @@ async function seedsFor(tf) {
       const m = (seeds[tf] ||= new Map())
       if (hasStore()) {
         try {
-          const saved = JSON.parse((await redis('GET', 'ema:' + tf)) || '{}')
+          const saved = JSON.parse((await redis('GET', 'ema2:' + tf)) || '{}')
           for (const [sym, v] of Object.entries(saved)) if (!m.has(sym)) m.set(sym, v)
         } catch { /* archivio non raggiungibile: si riparte dallo storico */ }
       }
@@ -70,7 +71,7 @@ function saveSeeds(tf) {
   const st = seedSync[tf]
   if (!hasStore() || !st || Date.now() - st.savedAt < SAVE_EVERY) return
   st.savedAt = Date.now()
-  redis('SET', 'ema:' + tf, JSON.stringify(Object.fromEntries(seeds[tf]))).catch(() => null)
+  redis('SET', 'ema2:' + tf, JSON.stringify(Object.fromEntries(seeds[tf]))).catch(() => null)
 }
 
 // EMA 200 di un titolo sulle sue candele più recenti: { value (candela in corso), seed } o null se lo storico non basta.
@@ -80,7 +81,7 @@ async function emaOf(s, tf, bars, m) {
   let r = seed && !seed.short && bars.some(b => b.t === seed.t) ? ema(bars, seed) : null
   if (!r) {
     // Seme assente o troppo vecchio: storico lungo (se le candele non sono già tutto lo storico)
-    const hist = bars.length < 200 ? bars : await klinesBack(s, tf, EMA_HISTORY).catch(() => bars)
+    const hist = bars.length < 200 || bars.length >= EMA_HISTORY ? bars : await klinesBack(s, tf, EMA_HISTORY).catch(() => bars)
     r = ema(hist.length >= bars.length ? hist : bars)
   }
   if (!r) { m.set(s, { short: Date.now() }); return null }
@@ -108,10 +109,12 @@ export async function run(tf, symbols, p) {
   const list = symbols || await topSymbols(TOP)
   const m = await seedsFor(tf)
   const rows = await pool(list, CONCURRENCY, async s => {
-    const bars = await klines(s, tf, 200)
+    // 1d e 1w delle crypto: candele più vecchie da Binance/Bybit dove Bitunix non arriva (vedi _history.js)
+    const recent = await klines(s, tf, 200)
+    const bars = await withHistory(s, tf, recent).catch(() => recent)
     if (bars.length < p.rsi + p.stoch + p.k + p.d) return null
     const { k, d } = stochRsi(bars, p)
-    const t = bars.length > EMA_LENGTH || bars.length === 200 ? await trendOf(s, tf, bars, m).catch(() => 0) : 0
+    const t = bars.length > EMA_LENGTH || bars.length >= 200 ? await trendOf(s, tf, bars, m).catch(() => 0) : 0
     return { s, k: k.slice(-TAIL).map(round), d: d.slice(-TAIL).map(round), c: bars[bars.length - 1].c, t }
   })
   saveSeeds(tf)

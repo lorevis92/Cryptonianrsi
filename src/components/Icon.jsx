@@ -12,6 +12,7 @@ const P = {
   camera: 'M4 8h4l2-2h4l2 2h4v11H4z M12 10.5a3 3 0 1 0 0 6a3 3 0 1 0 0-6z',
   list: 'M9 7h11 M9 12h11 M9 17h11 M4.5 7h.01 M4.5 12h.01 M4.5 17h.01',
   info: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17z M12 11v5.5 M12 7.8h.01',
+  swap: 'M7 7h12l-3.5-3.5 M17 17H5l3.5 3.5',
   star: 'M12 3.6l2.6 5.3 5.8.85-4.2 4.1 1 5.8L12 16.9l-5.2 2.75 1-5.8-4.2-4.1 5.8-.85z',
 }
 export default function Icon({ name, size = 18, filled = false }) {

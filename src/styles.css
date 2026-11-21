@@ -675,3 +675,11 @@ p { margin: 0; }
 .card__foot { align-items: center; gap: 12px; }
 .card__note { margin: 0 auto 0 0; font-size: 11.5px; font-style: italic; color: var(--muted-2); }
 .full__foot { padding: 6px 16px calc(10px + env(safe-area-inset-bottom)); margin-top: 0; }
+
+/* Exchange consigliati nella barra in alto: pillola oro (telefono: prima riga, prima del menu; desktop: prima di Cerca) */
+.top__ex { order: 3; flex: none; display: inline-flex; align-items: center; justify-content: center; height: 30px; padding: 0 11px;
+  border: 1px solid rgba(200, 169, 106, .55); border-radius: 999px; font-size: 12.5px; font-weight: 500; color: var(--gold); white-space: nowrap; transition: border-color .2s, color .2s, background-color .2s; }
+.top__ex:hover { border-color: var(--gold); color: var(--gold-light); background: rgba(200, 169, 106, .06); }
+.top__ex-icon { display: none; }
+@media (max-width: 374px) { .top__ex { width: 32px; height: 32px; padding: 0; } .top__ex-text { display: none; } .top__ex-icon { display: inline-grid; } }
+@media (min-width: 980px) { .top__ex { order: 4; height: 32px; padding: 0 13px; font-size: 13px; } }

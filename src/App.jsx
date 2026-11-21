@@ -131,6 +131,10 @@ export default function App() {
           <div className="brand">
             <span className="brand__name">Cryptonian <em>RSI</em></span>
           </div>
+          {/* Exchange consigliati, sempre a portata: pillola (icona sui telefoni più stretti) */}
+          <button className="top__ex" onClick={() => setSheet('exchanges')} aria-label="Exchange consigliati" title="Exchange consigliati">
+            <span className="top__ex-text">Exchange</span><span className="top__ex-icon" aria-hidden="true"><Icon name="swap" size={17} /></span>
+          </button>
           <div className="symbol">
             {view === 'map' ? (
               <button className="symbol-btn" onClick={() => setSheet('symbol')} aria-label="Cerca un titolo">

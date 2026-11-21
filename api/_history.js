@@ -13,13 +13,13 @@ import { isNonCrypto } from '../src/lib/tvSymbols.js'
 // Azioni e materie prime: niente (per loro contano solo i dati Bitunix).
 
 const TFS = {
-  '1d': { binance: '1d', bybit: 'D', max: 2000, ms: 86400e3 },
+  '1d': { binance: '1d', bybit: 'D', max: 4000, ms: 86400e3 },
   '1w': { binance: '1w', bybit: 'W', max: 800, ms: 7 * 86400e3 },
 }
 const REFRESH_MS = 30 * 86400e3
 const RETRY_EMPTY_MS = 3 * 86400e3     // titolo non trovato altrove: riprovo dopo 3 giorni
 const RETRY_FAIL_MS = 10 * 60e3        // errore o blocco: riprovo dopo 10 minuti (senza salvare niente)
-const KEY = (tf, symbol) => `hist2:${tf}:${symbol}` // hist2: scarta i vecchi "vuoti" salvati quando i download fallivano
+const KEY = (tf, symbol) => `hist3:${tf}:${symbol}` // hist3: 1d fino a 4000 giorni (prima: 2000); scarta anche i vecchi "vuoti"
 const MAX_GAP = 0.04                    // se i prezzi non tornano (oltre il 4%) è un'altra moneta: scarto
 const memo = new Map()
 const failedAt = new Map()
@@ -109,7 +109,8 @@ async function stored(symbol, tf) {
 
 // Candele Bitunix (in ordine) + quelle più vecchie dell'altro exchange, solo prima della prima di Bitunix.
 // Controllo che sia lo stesso titolo: sui giorni in comune i prezzi devono coincidere (entro il 4%).
-export async function withHistory(symbol, tf, bars) {
+// limit: quante candele al massimo in tutto (di default quelle dello storico salvato)
+export async function withHistory(symbol, tf, bars, limit = null) {
   if (!hasLongHistory(symbol, tf) || !bars?.length) return bars
   const h = await stored(symbol, tf).catch(() => null)
   if (!h?.rows?.length) return bars
@@ -126,7 +127,7 @@ export async function withHistory(symbol, tf, bars) {
   }
   const first = bars[0].t
   const before = h.rows.filter(r => r[0] < first - cfg.ms / 2).map(([t, o, h2, l, c, v]) => ({ t, o, h: h2, l, c, v }))
-  return [...before.slice(-(cfg.max - bars.length)), ...bars]
+  return [...before.slice(-Math.max(0, (limit || cfg.max) - bars.length)), ...bars]
 }
 
 function nearest(rows, t, tol) {
@@ -134,4 +135,12 @@ function nearest(rows, t, tol) {
   while (lo < hi) { const m = (lo + hi) >> 1; if (rows[m][0] < t) lo = m + 1; else hi = m }
   for (const i of [lo - 1, lo]) if (rows[i] && Math.abs(rows[i][0] - t) <= tol) return rows[i][4]
   return null
+}
+
+// Candele dello storico salvato prima di una data (per il grafico che scorre a sinistra oltre Bitunix)
+export async function historyBefore(symbol, tf, before, n) {
+  if (!hasLongHistory(symbol, tf)) return []
+  const h = await stored(symbol, tf).catch(() => null)
+  if (!h?.rows?.length) return []
+  return h.rows.filter(r => r[0] < before).slice(-n).map(([t, o, hi, l, c, v]) => ({ t, o, h: hi, l, c, v }))
 }

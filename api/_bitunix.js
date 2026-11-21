@@ -44,8 +44,9 @@ export async function klines(symbol, interval, limit = 200, { endTime } = {}) {
   return (Array.isArray(data) ? data : []).map(toBar).filter(b => Number.isFinite(b.t)).sort((a, b) => a.t - b.t)
 }
 
-export async function klinesBack(symbol, interval, total) {
-  let out = [], end
+// total candele fino alla più recente, oppure fino a endTime (escluso) se indicato: serve a caricare lo storico più vecchio
+export async function klinesBack(symbol, interval, total, endTime = null) {
+  let out = [], end = endTime || undefined
   while (out.length < total) {
     const page = await klines(symbol, interval, 200, end ? { endTime: end } : {})
     const fresh = page.filter(b => !out.length || b.t < out[0].t)

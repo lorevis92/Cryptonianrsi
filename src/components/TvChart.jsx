@@ -32,7 +32,7 @@ export default function TvChart({ tvSymbol, tf, name, onClose }) {
         container_id: id,
         symbol: tvSymbol,
         interval: tf === '1w' ? 'W' : 'D',
-        range: 'ALL',
+        // niente range: con range 'ALL' TradingView passa al mensile e ignora il settimanale
         autosize: true,
         theme: 'dark',
         style: '1',

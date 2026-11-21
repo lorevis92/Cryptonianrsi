@@ -46,7 +46,7 @@ const DOUBLE_TAP = 320
 // quindi ogni candela sta esattamente sopra il suo valore di K e D.
 // fill: occupa tutta l'altezza del contenitore (grafico a tutto schermo).
 // alwaysActive: niente tocco per attivarlo, perché lì non c'è una pagina da scorrere.
-export default function Chart({ bars, k, d, upper, lower, tall, ema = null, precision = null, fill = false, alwaysActive = false, allBars = false }) {
+export default function Chart({ bars, k, d, upper, lower, tall, ema = null, precision = null, fill = false, alwaysActive = false, allBars = false, onNeedOlder = null }) {
   const box = useRef(), host = useRef(), edge = useRef(), veil = useRef(), api = useRef({})
   const [touched, setActive] = useState(false)
   const active = alwaysActive || touched
@@ -122,7 +122,12 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
 
     // Il tempo è cambiato dall'utente se l'intervallo si sposta durante un suo gesto
     // (non quando arriva una candela nuova o la card cambia misura).
-    const onRange = () => { a.placeEdge(); if (Date.now() - a.userAt < 400) setCustom(c => (c.time ? c : { ...c, time: true })) }
+    const onRange = r => {
+      a.placeEdge()
+      if (Date.now() - a.userAt < 400) setCustom(c => (c.time ? c : { ...c, time: true }))
+      // Vicino al bordo sinistro: chiedo le candele più vecchie (arrivano senza spostare la vista)
+      if (r && r.from < 20 && a.fitted) a.needOlder?.()
+    }
     chart.timeScale().subscribeVisibleLogicalRangeChange(onRange)
     chart.timeScale().subscribeSizeChange(a.placeEdge)
     const ro = new ResizeObserver(() => { axisTouch(); a.placeEdge() })
@@ -184,6 +189,9 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     setCustom({ price: false, time: false })
   }
 
+  // Funzione per le candele più vecchie, sempre quella attuale
+  useEffect(() => { api.current.needOlder = onNeedOlder }, [onNeedOlder])
+
   // Altezza dei riquadri
   useEffect(() => {
     const panes = api.current.chart?.panes()
@@ -207,6 +215,8 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
   useEffect(() => {
     const a = api.current
     if (!a.candles || !bars?.length) return
+    // Candele più vecchie aggiunte davanti: dopo setData la vista resta sulle stesse candele
+    const prevFirst = a.firstT, view = a.fitted ? a.chart.timeScale().getVisibleLogicalRange() : null
     a.candles.setData(bars.map(b => ({ time: toTime(b.t), open: b.o, high: b.h, low: b.l, close: b.c })))
     const line = arr => bars.map((b, i) => (arr?.[i] == null ? { time: toTime(b.t) } : { time: toTime(b.t), value: arr[i] }))
     a.kLine.setData(line(k))
@@ -217,6 +227,11 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     a.emaLast = hasEma ? ema[ema.length - 1] : null
     a.n = bars.length
     a.allBars = allBars
+    if (view && prevFirst && bars[0].t < prevFirst) {
+      const added = bars.findIndex(b => b.t === prevFirst)
+      if (added > 0) a.chart.timeScale().setVisibleLogicalRange({ from: view.from + added, to: view.to + added })
+    }
+    a.firstT = bars[0].t
     if (!a.fitted) {
       a.fitTime()
       a.fitted = true

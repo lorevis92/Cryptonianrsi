@@ -6,6 +6,8 @@ import { TrendMark } from './TrendBadge.jsx'
 import TvChart from './TvChart.jsx'
 import { tvSymbol } from '../lib/tvSymbols.js'
 import { TRADINGVIEW_WIDGET } from '../lib/features.js'
+
+const SHORT_HISTORY = 60 // sotto queste candele (1d, 1w) compare "Storico breve: valori indicativi"
 import { useCandles } from '../lib/useCandles.js'
 import { readState } from '../lib/stochrsi.js'
 import { TF_LABEL, planFor } from '../lib/plans.js'
@@ -13,7 +15,9 @@ import { fmtK, fmtPrice, ZONE_LABEL } from '../lib/format.js'
 import { isDesktop, reducedMotion, smoothLayout } from '../lib/motion.js'
 
 export default function TimeframeCard({ symbol, tf, unlocked, params, onState, onLocked, trend }) {
-  const { bars, ema, precision, error, loading } = useCandles(symbol, tf, unlocked)
+  const { bars, ema, precision, error, loading, loadOlder } = useCandles(symbol, tf, unlocked)
+  // 1d e 1w con poche candele: Stoch RSI ed EMA poggiano su pochi dati
+  const shortHistory = (tf === '1d' || tf === '1w') && bars?.length > 0 && bars.length < SHORT_HISTORY
   const s = useMemo(() => (bars ? readState(bars, params) : null), [bars, params])
   const [big, setBig] = useState(false)   // computer: card a tutta la riga
   const [full, setFull] = useState(false) // telefono: grafico a tutto schermo
@@ -61,18 +65,20 @@ export default function TimeframeCard({ symbol, tf, unlocked, params, onState, o
       {/* Il grafico si monta solo quando ci sono candele e lo stato è calcolato.
           Appena sbloccato un timeframe, per un render loading è ancora false: resta lo scheletro. */}
       {bars?.length && s
-        ? <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} tall={big} ema={ema} precision={precision} allBars={tf === '1w'} />
+        ? <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} tall={big} ema={ema} precision={precision} allBars={tf === '1w'} onNeedOlder={loadOlder} />
         : bars && !bars.length ? <p className="card__msg">Nessuna candela disponibile per questo titolo.</p>
         : error && !loading ? <p className="card__msg">{error}. Riprovo tra poco.</p>
         : <div className="card__skeleton" aria-label="Caricamento" />}
-      {tvSym && (
+      {(tvSym || shortHistory) && (
         <div className="card__foot">
-          <button className="card__tv" onClick={() => setTvOpen(true)}>Storico completo<span aria-hidden="true"> · TradingView</span></button>
+          {shortHistory && <p className="card__note">Storico breve: valori indicativi</p>}
+          {tvSym && <button className="card__tv" onClick={() => setTvOpen(true)}>Storico completo<span aria-hidden="true"> · TradingView</span></button>}
         </div>
       )}
       {tvOpen && <TvChart tvSymbol={tvSym} tf={tf} name={symbol.replace(/USDT$/, '')} onClose={() => setTvOpen(false)} />}
       {full && bars?.length > 0 && s && (
-        <FullChart tf={tf} s={s} bars={bars} ema={ema} precision={precision} params={params} price={last?.c} onClose={() => setFull(false)} />
+        <FullChart tf={tf} s={s} bars={bars} ema={ema} precision={precision} params={params} price={last?.c} onClose={() => setFull(false)}
+          onNeedOlder={loadOlder} shortHistory={shortHistory} onTv={tvSym ? () => setTvOpen(true) : null} />
       )}
     </article>
   )
@@ -90,7 +96,7 @@ function Reading({ s }) {
 
 // Telefono: il grafico sale dal basso e occupa tutto lo schermo.
 // Il grafico nasce già alla misura finale, quindi durante la salita non si ridisegna.
-function FullChart({ tf, s, bars, ema, precision, params, price, onClose }) {
+function FullChart({ tf, s, bars, ema, precision, params, price, onClose, onNeedOlder, shortHistory, onTv }) {
   const [closing, setClosing] = useState(false)
   const close = () => (reducedMotion() ? onClose() : setClosing(true))
 
@@ -113,8 +119,14 @@ function FullChart({ tf, s, bars, ema, precision, params, price, onClose }) {
       </header>
       <Reading s={s} />
       <div className="full__body">
-        <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} ema={ema} precision={precision} fill alwaysActive allBars={tf === '1w'} />
+        <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} ema={ema} precision={precision} fill alwaysActive allBars={tf === '1w'} onNeedOlder={onNeedOlder} />
       </div>
+      {(onTv || shortHistory) && (
+        <div className="card__foot full__foot">
+          {shortHistory && <p className="card__note">Storico breve: valori indicativi</p>}
+          {onTv && <button className="card__tv" onClick={onTv}>Storico completo<span aria-hidden="true"> · TradingView</span></button>}
+        </div>
+      )}
     </div>,
     document.body,
   )

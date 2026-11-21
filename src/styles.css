@@ -670,3 +670,8 @@ p { margin: 0; }
 .tv__credit { padding: 6px 16px calc(8px + env(safe-area-inset-bottom)); font-size: 11px; color: var(--muted-2); text-align: right; }
 .tv__credit a { color: var(--gold); }
 @media (prefers-reduced-motion: reduce) { .tv { animation: none; } }
+
+/* Storico breve (1d, 1w con poche candele) e piede del grafico a tutto schermo */
+.card__foot { align-items: center; gap: 12px; }
+.card__note { margin: 0 auto 0 0; font-size: 11.5px; font-style: italic; color: var(--muted-2); }
+.full__foot { padding: 6px 16px calc(10px + env(safe-area-inset-bottom)); margin-top: 0; }

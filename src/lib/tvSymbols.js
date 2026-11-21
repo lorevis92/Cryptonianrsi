@@ -38,7 +38,7 @@ export const TV_SYMBOLS = {
   XLEUSDT: 'AMEX:XLE', XBIUSDT: 'AMEX:XBI', EWJUSDT: 'AMEX:EWJ', EWYUSDT: 'AMEX:EWY', EWZUSDT: 'AMEX:EWZ', EWTUSDT: 'AMEX:EWT',
   KORUUSDT: 'AMEX:KORU', TZAUSDT: 'AMEX:TZA', UVXYUSDT: 'AMEX:UVXY', TMFUSDT: 'AMEX:TMF', TBTUSDT: 'AMEX:TBT', IGVUSDT: 'AMEX:IGV',
   URNMUSDT: 'AMEX:URNM', BITOUSDT: 'AMEX:BITO', IBITUSDT: 'NASDAQ:IBIT', TSLLUSDT: 'NASDAQ:TSLL', NVDLUSDT: 'NASDAQ:NVDL',
-  MSTUUSDT: 'MSTU', AMDLUSDT: 'AMDL', MUUUSDT: 'MUU', // senza borsa: la sceglie TradingView
+  MSTUUSDT: 'MSTU', AMDLUSDT: 'AMDL', MUUUSDT: 'MUU', // senza borsa: la sceglie TradingView (verificato: si aprono)
 }
 
 // Altri titoli non crypto di Bitunix senza corrispondenza sicura su TradingView (borse asiatiche, pre-IPO, ecc.):

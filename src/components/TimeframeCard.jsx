@@ -61,7 +61,7 @@ export default function TimeframeCard({ symbol, tf, unlocked, params, onState, o
       {/* Il grafico si monta solo quando ci sono candele e lo stato è calcolato.
           Appena sbloccato un timeframe, per un render loading è ancora false: resta lo scheletro. */}
       {bars?.length && s
-        ? <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} tall={big} ema={ema} precision={precision} />
+        ? <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} tall={big} ema={ema} precision={precision} allBars={tf === '1w'} />
         : bars && !bars.length ? <p className="card__msg">Nessuna candela disponibile per questo titolo.</p>
         : error && !loading ? <p className="card__msg">{error}. Riprovo tra poco.</p>
         : <div className="card__skeleton" aria-label="Caricamento" />}
@@ -113,7 +113,7 @@ function FullChart({ tf, s, bars, ema, precision, params, price, onClose }) {
       </header>
       <Reading s={s} />
       <div className="full__body">
-        <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} ema={ema} precision={precision} fill alwaysActive />
+        <Chart bars={bars} k={s.k} d={s.d} upper={params.upper} lower={params.lower} ema={ema} precision={precision} fill alwaysActive allBars={tf === '1w'} />
       </div>
     </div>,
     document.body,

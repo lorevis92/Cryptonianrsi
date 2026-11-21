@@ -2,9 +2,11 @@ import { createClient } from '@supabase/supabase-js'
 
 // Supabase lato server. Le variabili arrivano dall'integrazione del Marketplace di Vercel.
 // La chiave service role (o secret key) supera la RLS: resta SOLO qui, nelle funzioni del server.
-const URL_ = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const ANON = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
+// .trim(): una variabile incollata con uno spazio o un TAB in fondo non deve rompere niente
+const env = (...names) => names.map(n => (process.env[n] || '').trim()).find(Boolean) || ''
+const URL_ = env('SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL')
+const ANON = env('SUPABASE_ANON_KEY', 'SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
+const SERVICE = env('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEY')
 
 export const hasSupabase = () => !!(URL_ && ANON && SERVICE)
 

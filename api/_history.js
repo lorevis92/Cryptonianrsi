@@ -5,8 +5,11 @@ import { isNonCrypto } from '../src/lib/tvSymbols.js'
 // Bitunix ha poco storico (è nato nel 2024): le candele PRECEDENTI alla prima di Bitunix arrivano dalle API
 // pubbliche di Binance (spot) o di Bybit: si usa quello con lo storico più lungo. Servono solo per gli anni che mancano:
 // dove Bitunix ha dati, valgono i suoi.
-// Lo storico vecchio non cambia: si scarica una volta e resta su Upstash (hist:<tf>:<SYM>) e in memoria,
+// Lo storico vecchio non cambia: si scarica una volta e resta su Upstash (hist2:<tf>:<SYM>) e in memoria,
 // con un aggiornamento ogni 30 giorni per restare attaccato alle candele recenti di Bitunix.
+// Attenzione: Binance e Bybit bloccano le richieste dagli USA. Le funzioni girano a Francoforte (vercel.json,
+// "regions": ["fra1"]) e per Binance si usa data-api.binance.vision, l'endpoint pubblico dei soli dati di mercato.
+// Un download fallito per un errore di rete o un blocco NON viene salvato: si riprova dopo pochi minuti.
 // Azioni e materie prime: niente (per loro contano solo i dati Bitunix).
 
 const TFS = {
@@ -15,8 +18,11 @@ const TFS = {
 }
 const REFRESH_MS = 30 * 86400e3
 const RETRY_EMPTY_MS = 3 * 86400e3     // titolo non trovato altrove: riprovo dopo 3 giorni
+const RETRY_FAIL_MS = 10 * 60e3        // errore o blocco: riprovo dopo 10 minuti (senza salvare niente)
+const KEY = (tf, symbol) => `hist2:${tf}:${symbol}` // hist2: scarta i vecchi "vuoti" salvati quando i download fallivano
 const MAX_GAP = 0.04                    // se i prezzi non tornano (oltre il 4%) è un'altra moneta: scarto
 const memo = new Map()
+const failedAt = new Map()
 
 export const hasLongHistory = (symbol, tf) => tf in TFS && !isNonCrypto(symbol)
 
@@ -38,7 +44,8 @@ async function fromBinance(sym, cfg) {
   while (out.length < cfg.max) {
     const q = new URLSearchParams({ symbol: sym, interval: cfg.binance, limit: '1000' })
     if (end) q.set('endTime', String(end))
-    const rows = await getJson('https://api.binance.com/api/v3/klines?' + q)
+    const rows = await getJson('https://data-api.binance.vision/api/v3/klines?' + q)
+      .catch(e => (e.status === 400 ? Promise.reject(e) : getJson('https://api.binance.com/api/v3/klines?' + q)))
     if (!Array.isArray(rows) || !rows.length) break
     const page = rows.map(k => [Number(k[0]), +k[1], +k[2], +k[3], +k[4], +k[5]])
     out = [...page.filter(b => !out.length || b[0] < out[0][0]), ...out]
@@ -69,7 +76,11 @@ async function download(symbol, tf) {
   const cfg = TFS[tf], { sym, mult } = source(symbol)
   // Entrambi, una volta ogni 30 giorni: tengo quello con lo storico che parte prima
   // (un titolo può essere arrivato su Binance dopo che su Bybit, o viceversa)
-  const [bn, bb] = await Promise.all([fromBinance(sym, cfg).catch(() => []), fromBybit(sym, cfg).catch(() => [])])
+  // "Non trovato" (400 di Binance, Bybit senza dati) è una risposta definitiva; errori di rete o blocchi no
+  let failed = 0
+  const soft = e => { if (e?.status !== 400) failed++; return [] }
+  const [bn, bb] = await Promise.all([fromBinance(sym, cfg).catch(soft), fromBybit(sym, cfg).catch(soft)])
+  if (!bn.length && !bb.length && failed) throw new Error('Binance e Bybit non raggiungibili')
   const pick = !bb.length || (bn.length && bn[0][0] <= bb[0][0]) ? ['binance', bn] : ['bybit', bb]
   let [src, rows] = pick
   if (mult !== 1) rows = rows.map(([t, o, h, l, c, v]) => [t, o * mult, h * mult, l * mult, c * mult, v / mult])
@@ -77,16 +88,18 @@ async function download(symbol, tf) {
 }
 
 async function stored(symbol, tf) {
-  const key = `hist:${tf}:${symbol}`
+  const key = KEY(tf, symbol)
   const now = Date.now()
   let h = memo.get(key)
   if (!h && hasStore()) { try { h = JSON.parse((await redis('GET', key)) || 'null') } catch { h = null } }
   const stale = !h || now - h.at > (h.rows?.length ? REFRESH_MS : RETRY_EMPTY_MS)
-  if (stale) {
-    const fresh = await download(symbol, tf).catch(() => null)
-    if (fresh) {
-      h = fresh
+  if (stale && !(failedAt.get(key) > now - RETRY_FAIL_MS)) {
+    try {
+      h = await download(symbol, tf)
       if (hasStore()) redis('SET', key, JSON.stringify(h), 'EX', 60 * 86400).catch(() => null)
+    } catch (e) {
+      failedAt.set(key, now) // blocco o rete: niente salvataggio, riprovo più tardi
+      console.warn('storico', symbol, tf, e.message)
     }
   }
   if (h) memo.set(key, h)

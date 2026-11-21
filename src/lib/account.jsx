@@ -51,7 +51,7 @@ async function getClient() {
     if (!cfg) cfg = await fresh
     if (!cfg?.url || !cfg?.anonKey) return null
     const { createClient } = await import('@supabase/supabase-js')
-    return createClient(cfg.url, cfg.anonKey, {
+    return createClient(cfg.url.trim(), cfg.anonKey.trim(), {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'crsi:auth' },
     })
   })()

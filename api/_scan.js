@@ -56,7 +56,7 @@ async function seedsFor(tf) {
       const m = (seeds[tf] ||= new Map())
       if (hasStore()) {
         try {
-          const saved = JSON.parse((await redis('GET', 'ema2:' + tf)) || '{}')
+          const saved = JSON.parse((await redis('GET', 'ema3:' + tf)) || '{}')
           for (const [sym, v] of Object.entries(saved)) if (!m.has(sym)) m.set(sym, v)
         } catch { /* archivio non raggiungibile: si riparte dallo storico */ }
       }
@@ -71,7 +71,7 @@ function saveSeeds(tf) {
   const st = seedSync[tf]
   if (!hasStore() || !st || Date.now() - st.savedAt < SAVE_EVERY) return
   st.savedAt = Date.now()
-  redis('SET', 'ema2:' + tf, JSON.stringify(Object.fromEntries(seeds[tf]))).catch(() => null)
+  redis('SET', 'ema3:' + tf, JSON.stringify(Object.fromEntries(seeds[tf]))).catch(() => null)
 }
 
 // EMA 200 di un titolo sulle sue candele più recenti: { value (candela in corso), seed } o null se lo storico non basta.

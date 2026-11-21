@@ -46,7 +46,7 @@ const DOUBLE_TAP = 320
 // quindi ogni candela sta esattamente sopra il suo valore di K e D.
 // fill: occupa tutta l'altezza del contenitore (grafico a tutto schermo).
 // alwaysActive: niente tocco per attivarlo, perché lì non c'è una pagina da scorrere.
-export default function Chart({ bars, k, d, upper, lower, tall, ema = null, precision = null, fill = false, alwaysActive = false }) {
+export default function Chart({ bars, k, d, upper, lower, tall, ema = null, precision = null, fill = false, alwaysActive = false, allBars = false }) {
   const box = useRef(), host = useRef(), edge = useRef(), veil = useRef(), api = useRef({})
   const [touched, setActive] = useState(false)
   const active = alwaysActive || touched
@@ -83,7 +83,8 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     axisTouch()
 
     // Scala automatica del tempo: le ultime VISIBLE_BARS candele
-    a.fitTime = () => { if (a.n) chart.timeScale().setVisibleLogicalRange({ from: a.n - VISIBLE_BARS, to: a.n + 2 }) }
+    // (settimanale: tutto lo storico, fino al 2017 per BTC; gli altri le ultime VISIBLE_BARS candele)
+    a.fitTime = () => { if (a.n) chart.timeScale().setVisibleLogicalRange({ from: a.allBars ? 0 : a.n - VISIBLE_BARS, to: a.n + 2 }) }
     // La scala dei prezzi è "manuale" quando la libreria ha spento l'autoScale (asse trascinato)
     const priceCustom = () => [0, 1].some(i => chart.priceScale('right', i).options().autoScale === false)
     const sync = () => setCustom(c => {
@@ -215,6 +216,7 @@ export default function Chart({ bars, k, d, upper, lower, tall, ema = null, prec
     a.emaLine.setData(hasEma ? line(ema) : [])
     a.emaLast = hasEma ? ema[ema.length - 1] : null
     a.n = bars.length
+    a.allBars = allBars
     if (!a.fitted) {
       a.fitTime()
       a.fitted = true

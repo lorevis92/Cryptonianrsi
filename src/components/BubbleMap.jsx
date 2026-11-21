@@ -21,6 +21,23 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
   const [view, setView] = useState(() => load('mapView', 'bubbles'))
   const [filter, setFilter] = useState(() => load('mapFilter', 'all'))
   const [legend, setLegend] = useState(false)
+  // Telefono: la Legenda si apre attaccata sotto il suo bottone, a tutta larghezza, e si chiude toccando fuori
+  const mapRef = useRef(), legendBtn = useRef(), legendBox = useRef()
+  useEffect(() => {
+    if (!legend || !matchMedia('(max-width: 979px)').matches) return
+    const place = () => {
+      const b = legendBtn.current
+      if (b && mapRef.current) mapRef.current.style.setProperty('--legend-top', `${b.offsetTop + b.offsetHeight + 6}px`)
+    }
+    place()
+    const outside = e => {
+      if (legendBox.current?.contains(e.target) || legendBtn.current?.contains(e.target)) return
+      setLegend(false)
+    }
+    window.addEventListener('resize', place)
+    document.addEventListener('pointerdown', outside, true)
+    return () => { window.removeEventListener('resize', place); document.removeEventListener('pointerdown', outside, true) }
+  }, [legend])
   useEffect(() => save('mapView', view), [view])
   useEffect(() => save('mapFilter', filter), [filter])
 
@@ -47,7 +64,7 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
   const notice = !loaded && error ? 'Bitunix non risponde, riprovo tra poco.' : null
 
   return (
-    <section className="map" aria-label="Mappa dell'allineamento">
+    <section ref={mapRef} className="map" aria-label="Mappa dell'allineamento">
       <div className="map__bar">
         <div className="seg" role="group" aria-label="Vista">
           {VIEWS.map(([id, label, icon]) => (
@@ -61,13 +78,14 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
             <button key={id} className={`seg__btn is-${id}` + (filter === id ? ' is-on' : '')} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>
           ))}
         </div>
-        <button className={'map__legend-btn' + (legend ? ' is-on' : '')} aria-expanded={legend} aria-controls="legenda" aria-label="Legenda" title="Legenda" onClick={() => setLegend(v => !v)}>
+        <button ref={legendBtn} className={'map__legend-btn' + (legend ? ' is-on' : '')} aria-expanded={legend} aria-controls="legenda" aria-label="Legenda" title="Legenda" onClick={() => setLegend(v => !v)}>
           <span className="map__legend-icon" aria-hidden="true"><Icon name="info" size={17} /></span><span className="map__legend-text">Legenda</span><Icon name="chevron" size={14} />
         </button>
       </div>
 
       {legend && (
-        <div className="legend" id="legenda">
+        <div ref={legendBox} className="legend" id="legenda">
+          <button className="icon-btn legend__close" onClick={() => setLegend(false)} aria-label="Chiudi la legenda"><Icon name="close" size={18} /></button>
           <MiniRings size={92} rings={{ '1w': 0.95, '1d': 0.9, '4h': 0.7, '1h': 0.45, '15m': 0, '5m': -0.3, '3m': -0.6, '1m': -0.95 }} signal />
           <div className="legend__text">
             <p><b>Lo Stochastic RSI</b> va da 0 a 100 e dice se un prezzo ha corso troppo: sotto {params.lower} è <em className="t-os">ipervenduto</em> (il prezzo è sceso molto e in fretta), sopra {params.upper} è <em className="t-ob">ipercomprato</em> (è salito molto e in fretta). Descrive il movimento, non dice cosa fare.</p>

@@ -8,7 +8,7 @@ export const EXCHANGES = [
     name: 'Bitunix',
     url: 'https://www.bitunix.com/register?vipCode=Cryptoniano',
     points: [
-      'Registrazione rapida senza KYC obbligatorio per iniziare',
+      'Registrazione rapida senza KYC',
       'Perpetual su crypto, azioni e materie prime',
       'Prezzi pre-mercato, operativo 7 giorni su 7',
     ],
@@ -18,8 +18,8 @@ export const EXCHANGES = [
     name: 'BTCC',
     url: 'https://partner.btcc.com/us/c/4EQOVA/98563398',
     points: [
-      'Attivo dal 2011, prima di Binance e Bybit, e secondo l\'exchange mai violato da hacker',
-      'Registrazione rapida senza KYC obbligatorio per iniziare',
+      'Attivo dal 2011, prima di Binance e Bybit, e mai violato da hacker',
+      'Registrazione rapida senza KYC',
       'Prezzi pre-mercato, operativo 7 giorni su 7',
     ],
   },

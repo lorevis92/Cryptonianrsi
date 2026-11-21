@@ -635,3 +635,14 @@ p { margin: 0; }
 .exchange__cta { display: inline-grid; place-items: center; height: 44px; text-decoration: none; background: var(--gold); color: var(--ink); font-weight: 600; transition: background-color .2s; }
 .exchange__cta:hover { background: var(--gold-light); }
 .exchanges__note { margin-top: 4px; font-size: 11.5px; line-height: 1.5; color: var(--muted-2); }
+
+/* Legenda su telefono: attaccata sotto il bottone "i", a tutta larghezza, sfondo pieno, X per chiudere */
+.legend__close { display: none; }
+@media (max-width: 979px) {
+  .legend { top: var(--legend-top, 60px); left: 8px; right: 8px; max-width: none; max-height: calc(100% - var(--legend-top, 60px) - 8px);
+    padding-top: 14px; background: var(--graphite); border-radius: 0 0 16px 16px; animation-name: legend-drop; }
+  .legend__close { display: inline-grid; position: absolute; top: 6px; right: 6px; z-index: 1; color: var(--muted); }
+  .legend .mini-rings { margin-right: 28px; }
+}
+@keyframes legend-drop { from { opacity: 0; transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .legend { animation: none; } }

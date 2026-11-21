@@ -173,7 +173,7 @@ export default function App() {
           <div className="layout__cards">
             {TIMEFRAMES.map(tf => (
               <CardBoundary key={symbol + tf} tf={tf}>
-                <TimeframeCard symbol={symbol} tf={tf} unlocked={unlocked.includes(tf)} params={params} onState={onState} onLocked={openPlans} trend={trends[tf]} />
+                <TimeframeCard symbol={symbol} tf={tf} unlocked={unlocked.includes(tf)} params={params} onState={onState} onLocked={openPlans} />
               </CardBoundary>
             ))}
           </div>

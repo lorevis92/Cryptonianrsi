@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Chart from './Chart.jsx'
 import Icon from './Icon.jsx'
-import { TrendMark } from './TrendBadge.jsx'
 import TvChart from './TvChart.jsx'
 import { tvSymbol } from '../lib/tvSymbols.js'
 import { TRADINGVIEW_WIDGET } from '../lib/features.js'
@@ -14,7 +13,7 @@ import { TF_LABEL, planFor } from '../lib/plans.js'
 import { fmtK, fmtPrice, ZONE_LABEL } from '../lib/format.js'
 import { isDesktop, reducedMotion, smoothLayout } from '../lib/motion.js'
 
-export default function TimeframeCard({ symbol, tf, unlocked, params, onState, onLocked, trend }) {
+export default function TimeframeCard({ symbol, tf, unlocked, params, onState, onLocked }) {
   const { bars, ema, precision, error, loading, loadOlder } = useCandles(symbol, tf, unlocked)
   // 1d e 1w con poche candele: Stoch RSI ed EMA poggiano su pochi dati
   const shortHistory = (tf === '1d' || tf === '1w') && bars?.length > 0 && bars.length < SHORT_HISTORY
@@ -56,7 +55,6 @@ export default function TimeframeCard({ symbol, tf, unlocked, params, onState, o
         <span className="card__tf">{tf}</span>
         <span className="card__state">
           <span className="card__zone">{s?.K != null ? ZONE_LABEL[s.zone] : bars?.length && s ? 'Dati insufficienti' : ''}</span>
-          {s?.K != null && <TrendMark t={trend} tf={tf} size="auto" />}
         </span>
         <span className="card__price">{fmtPrice(last?.c, precision)}</span>
         <button className="icon-btn" onClick={expand} aria-label={big ? 'Riduci il grafico' : 'Ingrandisci il grafico'} aria-pressed={big || full}><Icon name="expand" size={16} /></button>

@@ -94,7 +94,7 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
               <span><i className="key key--sig" />Zona di attenzione (anello dorato)</span>
             </p>
             <p><b>Il numero accanto a ogni titolo</b> (es. 54<small className="legend__of">/100</small>) indica quanti timeframe sono allineati nella stessa zona: più è alto, più l'allineamento è forte. I timeframe grandi contano di più.</p>
-            <p><b>Il trend (EMA {EMA_LENGTH})</b> indica la direzione di fondo del prezzo: <span className="trend is-up">Rialzista</span> se il prezzo è sopra la media, <span className="trend is-down">Ribassista</span> se è sotto. Accanto a ogni titolo trovi il trend del {MAIN_TREND_TF}.</p>
+            <p><b>Il trend (EMA {EMA_LENGTH})</b> indica la direzione di fondo del prezzo: <span className="trend is-up">Rialzista</span> se il prezzo è sopra la media, <span className="trend is-down">Ribassista</span> se è sotto.</p>
             <p><b>Stesso colore = zona e trend concordano. Colori diversi = cautela.</b></p>
           </div>
         </div>

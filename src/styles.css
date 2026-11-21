@@ -646,3 +646,11 @@ p { margin: 0; }
 }
 @keyframes legend-drop { from { opacity: 0; transform: translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) { .legend { animation: none; } }
+
+/* Legenda su telefono: solo testo, a tutta larghezza (la bolla in miniatura resta su desktop) */
+@media (max-width: 979px) {
+  .legend .mini-rings { display: none; }
+  .legend__text { flex-basis: 100%; }
+  .legend__text > p:first-child { padding-right: 30px; }
+}
+.legend__of { font-size: 11px; color: var(--gold); opacity: .8; }

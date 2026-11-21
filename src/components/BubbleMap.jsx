@@ -5,16 +5,13 @@ import Icon from './Icon.jsx'
 import TrendBadge from './TrendBadge.jsx'
 import { MAIN_TREND_TF, EMA_LENGTH } from '../lib/trend.js'
 import { useScan } from '../lib/useScan.js'
-import { alignment, SIGNAL_TIMEFRAMES, WEIGHTS, IN_ZONE_BASE, STRONG_SCORE } from '../lib/alignment.js'
+import { alignment, STRONG_SCORE } from '../lib/alignment.js'
 import { bubbleData } from '../lib/bubbleDraw.js'
-import { TIMEFRAMES } from '../lib/plans.js'
-import { ZONE_LABEL, STRONG_LABEL, ATTENTION_LABEL, signalLabel } from '../lib/format.js'
+import { ZONE_LABEL, STRONG_LABEL, signalLabel } from '../lib/format.js'
 import { load, save } from '../lib/storage.js'
 
 const FILTERS = [['all', 'Tutti'], ['oversold', 'Ipervenduto'], ['overbought', 'Ipercomprato']]
 const VIEWS = [['bubbles', 'Bolle', 'bubbles'], ['list', 'Elenco', 'list']]
-const fmtW = w => String(w).replace('.', ',')
-const listJoin = a => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} o ${a[a.length - 1]}`)
 
 // Pagina iniziale: l'allineamento dello Stochastic RSI sugli 8 timeframe, a colpo d'occhio.
 export default function BubbleMap({ favorites, params, onOpen, highlight = null, onClearHighlight, footer = null }) {
@@ -88,33 +85,17 @@ export default function BubbleMap({ favorites, params, onOpen, highlight = null,
           <button className="icon-btn legend__close" onClick={() => setLegend(false)} aria-label="Chiudi la legenda"><Icon name="close" size={18} /></button>
           <MiniRings size={92} rings={{ '1w': 0.95, '1d': 0.9, '4h': 0.7, '1h': 0.45, '15m': 0, '5m': -0.3, '3m': -0.6, '1m': -0.95 }} signal />
           <div className="legend__text">
-            <p><b>Lo Stochastic RSI</b> va da 0 a 100 e dice se un prezzo ha corso troppo: sotto {params.lower} è <em className="t-os">ipervenduto</em> (il prezzo è sceso molto e in fretta), sopra {params.upper} è <em className="t-ob">ipercomprato</em> (è salito molto e in fretta). Descrive il movimento, non dice cosa fare.</p>
-            <p><b>Ogni anello è un timeframe.</b> All'esterno 1w (settimanale), poi 1d, 4h, 1h, 15m, 5m, 3m, fino a 1m al centro. Più K è estremo, più il colore è pieno.</p>
+            <p><b>Lo Stochastic RSI</b> va da 0 a 100. Sotto {params.lower} il titolo è in <em className="t-os">ipervenduto</em>, sopra {params.upper} è in <em className="t-ob">ipercomprato</em>.</p>
+            <p><b>Ogni anello della bolla è un timeframe:</b> all'esterno il settimanale (1w), al centro il minuto (1m). Più il colore è pieno, più il valore è estremo.</p>
             <p className="legend__keys">
               <span><i className="key key--os" />Ipervenduto</span>
               <span><i className="key key--ob" />Ipercomprato</span>
               <span><i className="key key--n" />Neutro</span>
-              <span><i className="key key--sig" />Zona di attenzione</span>
+              <span><i className="key key--sig" />Zona di attenzione (anello dorato)</span>
             </p>
-            <p><b>L'EMA {EMA_LENGTH}</b> è la media del prezzo delle ultime {EMA_LENGTH} candele, che dà più peso alle più recenti. Indica la direzione di fondo: prezzo sopra la media <span className="trend is-up">▲ Trend rialzista</span>, sotto <span className="trend is-down">▼ Trend ribassista</span>. Il badge accanto a ogni titolo usa il {MAIN_TREND_TF}; nel dettaglio ogni timeframe ha il suo triangolo.</p>
-            <p>Nei grafici del dettaglio <b className="tone is-gold">la linea oro è l'EMA {EMA_LENGTH}</b>: prezzo sopra = trend rialzista, sotto = ribassista.</p>
-            <p>Insieme allo Stoch RSI dà quattro letture:</p>
-            <ul className="legend__cases">
-              <li><b className="tone is-up">Ipervenduto in trend rialzista</b> il prezzo è sceso in fretta, ma resta sopra la media di fondo.</li>
-              <li><b className="tone is-caution">Ipervenduto, ma trend ribassista · rischio alto</b> il prezzo è sceso in fretta dentro una discesa più lunga.</li>
-              <li><b className="tone is-down">Ipercomprato in trend ribassista</b> il prezzo è salito in fretta, ma resta sotto la media di fondo.</li>
-              <li><b className="tone is-strong">Forte spinta rialzista · ipercomprato</b> il prezzo è salito in fretta dentro una salita più lunga.</li>
-            </ul>
-            <p>Il trend usa gli stessi colori dello Stoch RSI: <span className="t-os">ciano</span> a favore del rialzo, <span className="t-ob">rosa</span> a favore del ribasso. <b>Stesso colore = zona e trend concordano. Colori diversi = cautela.</b></p>
-            <p>Sono descrizioni di quello che è successo, non previsioni.</p>
-            <p><b>Il punteggio, da 0 a 100,</b> conta soprattutto quanti timeframe sono nella stessa zona: sotto {params.lower} o sopra {params.upper}. I timeframe grandi pesano di più:</p>
-            <p className="legend__weights">
-              {Object.entries(WEIGHTS).map(([tf, w]) => <span key={tf}>{tf} <b>{fmtW(w)}</b></span>)}
-            </p>
-            <p>Ogni timeframe in zona porta il {Math.round(IN_ZONE_BASE * 100)}% del suo peso; il resto è un piccolo bonus che cresce quanto più K è estremo. Tutti e {TIMEFRAMES.length} nella stessa zona fanno almeno {Math.round(IN_ZONE_BASE * 100)}, fino a 100. 0 vuol dire nessun timeframe in zona. Un timeframe nella zona opposta toglie punti. Il punteggio non è relativo: il primo dell'elenco non ha per forza 100. Il colore del numero dice la direzione: <em className="t-os">ciano ipervenduto</em>, <em className="t-ob">rosa ipercomprato</em>.</p>
-            <p>Da {Math.round(STRONG_SCORE * 100)} in su la lettura diventa forte: <em className="t-os">{STRONG_LABEL.oversold}</em> · {ATTENTION_LABEL.oversold} o <em className="t-ob">{STRONG_LABEL.overbought}</em> · {ATTENTION_LABEL.overbought}.</p>
-            <p><b>Nelle Bolle lo stesso punteggio decide la grandezza:</b> più è alto, più la bolla è grande e luminosa.</p>
-            <p>L'anello dorato indica una zona di attenzione: K ha appena incrociato D dentro la zona su {listJoin(SIGNAL_TIMEFRAMES)}. Sono letture dell'indicatore, non indicazioni a comprare o vendere.</p>
+            <p><b>Il numero accanto a ogni titolo</b> (es. 54<small className="legend__of">/100</small>) indica quanti timeframe sono allineati nella stessa zona: più è alto, più l'allineamento è forte. I timeframe grandi contano di più.</p>
+            <p><b>Il trend (EMA {EMA_LENGTH})</b> indica la direzione di fondo del prezzo: <span className="trend is-up">Rialzista</span> se il prezzo è sopra la media, <span className="trend is-down">Ribassista</span> se è sotto. Accanto a ogni titolo trovi il trend del {MAIN_TREND_TF}; nel dettaglio ogni timeframe ha il suo.</p>
+            <p><b>Stesso colore = zona e trend concordano. Colori diversi = cautela.</b></p>
           </div>
         </div>
       )}
